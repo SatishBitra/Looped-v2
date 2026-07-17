@@ -591,7 +591,7 @@ function EmployeeDashboardPage() {
           <div className="absolute top-[48%] left-[50%] lg:left-[58%] -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] lg:w-[220px] lg:h-[220px] rounded-full bg-[#4FC3F7]/50 dark:bg-[#4FC3F7]/35 blur-[45px] pointer-events-none z-0" />
 
           {/* Today's Priorities Container */}
-          <section className="relative z-10 lg:col-span-7 bg-[#f3f3f5]/90 backdrop-blur-[8px] dark:bg-[#162135]/45 border border-[#D5E4F5]/50 dark:border-[#2a384e]/20 rounded-[36px] p-5 sm:p-8 shadow-[var(--shadow-soft)] space-y-6">
+          <section className="relative z-10 lg:col-span-7 bg-gradient-to-br from-white/60 via-white/40 to-white/10 dark:from-[#162135]/45 dark:via-[#162135]/25 dark:to-[#162135]/10 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-[36px] p-5 sm:p-8 shadow-[var(--shadow-soft)] space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="text-[20px] font-medium text-[#111111] dark:text-white">
@@ -781,7 +781,7 @@ function EmployeeDashboardPage() {
           </section>
 
           {/* Workflow Bottlenecks Container */}
-          <section className="relative z-10 lg:col-span-5 bg-[#f3f3f5]/90 backdrop-blur-[8px] dark:bg-[#162135]/45 border border-[#D5E4F5]/50 dark:border-[#2a384e]/20 rounded-[36px] p-5 sm:p-8 shadow-[var(--shadow-soft)] space-y-6">
+          <section className="relative z-10 lg:col-span-5 bg-gradient-to-br from-white/60 via-white/40 to-white/10 dark:from-[#162135]/45 dark:via-[#162135]/25 dark:to-[#162135]/10 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-[36px] p-5 sm:p-8 shadow-[var(--shadow-soft)] space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="text-[20px] font-medium text-[#111111] dark:text-white">
