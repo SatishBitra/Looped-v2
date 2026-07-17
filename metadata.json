@@ -2,7 +2,5 @@
   "name": "Looped",
   "description": "A collaborative workflow and capacity management dashboard that allows teams to track daily capacity, manage priority tasks, resolve bottlenecks, and monitor projects in real-time.",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

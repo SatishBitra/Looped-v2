@@ -16,26 +16,52 @@ import {
   Calendar,
   X,
   Menu,
+  Briefcase,
+  ArrowRight,
+  User,
+  LogOut,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  ChevronDown,
+  Check,
+  Paperclip,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
+import { notificationStore } from "@/lib/notifications-store";
+import { NotificationDrawer } from "./notification-drawer";
 
 const nav = [
   { to: "/home", icon: Home, label: "Home" },
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/projects", icon: FolderKanban, label: "Projects" },
   { to: "/tasks", icon: CheckSquare, label: "Tasks" },
+  { to: "/calendar", icon: Calendar, label: "Calendar" },
   { to: "/approvals", icon: ShieldCheck, label: "Approvals" },
+  { to: "/team", icon: Users, label: "Team" },
   { to: "/notifications", icon: Bell, label: "Notifications" },
   { to: "/messages", icon: MessageSquare, label: "Messages" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
-  { to: "/clients", icon: Users, label: "Clients" },
+  { to: "/clients", icon: Briefcase, label: "Clients" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ] as const;
 
 function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [unreadCount, setUnreadCount] = useState(
+    notificationStore.getNotifications().filter((n) => n.status === "unread").length,
+  );
+
+  useEffect(() => {
+    const unsubscribe = notificationStore.subscribe(() => {
+      setUnreadCount(
+        notificationStore.getNotifications().filter((n) => n.status === "unread").length,
+      );
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <aside className="hidden md:flex fixed left-4 top-4 bottom-4 w-[72px] z-30 flex flex-col items-center py-5 bg-card border border-border rounded-[32px] shadow-[var(--shadow-soft)]">
@@ -50,6 +76,7 @@ function Sidebar() {
         {nav.map((item) => {
           const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
           const Icon = item.icon;
+          const isBell = item.label === "Notifications";
           return (
             <Link
               key={item.to}
@@ -62,6 +89,11 @@ function Sidebar() {
               title={item.label}
             >
               <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              {isBell && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#E4664F] text-white rounded-full flex items-center justify-center text-[9px] font-bold border border-white dark:border-[#242428]">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
               <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-foreground text-background text-[12px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                 {item.label}
               </span>
@@ -84,14 +116,200 @@ function TopNav({
   setSearchQuery,
   onQuickAdd,
   onMenuToggle,
+  onNotificationClick,
+  unreadCount = 0,
 }: {
   searchQuery?: string;
   setSearchQuery?: (val: string) => void;
   onQuickAdd?: () => void;
   onMenuToggle?: () => void;
+  onNotificationClick?: () => void;
+  unreadCount?: number;
 }) {
+  const [isNotifPopoverOpen, setIsNotifPopoverOpen] = useState(false);
+  const [isProfilePopoverOpen, setIsProfilePopoverOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [selectedNotifTab, setSelectedNotifTab] = useState<"inbox" | "general" | "archived">(
+    "inbox",
+  );
+  const [presenceStatus, setPresenceStatus] = useState<
+    "Online" | "Busy" | "In Meeting" | "Focus Time" | "Away" | "Offline"
+  >("Online");
+
+  const [localNotifications, setLocalNotifications] = useState(
+    notificationStore.getNotifications(),
+  );
+
+  const [popoverNotifs, setPopoverNotifs] = useState([
+    {
+      id: "pop_1",
+      senderName: "Polly",
+      senderAvatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+      senderPresence: "online" as const,
+      actionText: "edited",
+      targetText: "Contact page",
+      timeText: "36 mins ago",
+      groupText: "Craftwork Design",
+      status: "unread" as const,
+      tab: "inbox" as const,
+    },
+    {
+      id: "pop_2",
+      senderName: "James",
+      senderAvatar:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
+      senderPresence: "none" as const,
+      actionText: "left a comment on",
+      targetText: "ACME 2.1",
+      timeText: "2 hours ago",
+      groupText: "ACME",
+      status: "unread" as const,
+      tab: "inbox" as const,
+    },
+    {
+      id: "pop_3",
+      senderName: "Mary",
+      senderAvatar:
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150",
+      senderPresence: "online" as const,
+      actionText: "shared the file",
+      targetText: "Isometric 2.0 with you",
+      timeText: "3 hours ago",
+      groupText: "Craftwork Design",
+      status: "read" as const, // Mary has no unread dot in the image
+      tab: "inbox" as const,
+      hasActions: true,
+    },
+    {
+      id: "pop_4",
+      senderName: "Dima Phizeg",
+      senderAvatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
+      senderPresence: "none" as const,
+      actionText: "edited",
+      targetText: "ACME 2.1",
+      timeText: "3 hours ago",
+      groupText: "ACME",
+      status: "read" as const,
+      tab: "inbox" as const,
+      attachmentName: "ACME_guideline.pdf",
+    },
+    {
+      id: "pop_5",
+      senderName: "James",
+      senderAvatar:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
+      senderPresence: "none" as const,
+      actionText: "created",
+      targetText: "Changelog page for Blank",
+      timeText: "1 day ago",
+      groupText: "Blank",
+      status: "read" as const,
+      tab: "inbox" as const,
+    },
+    {
+      id: "pop_gen_1",
+      senderName: "System Alert",
+      senderAvatar: "",
+      senderPresence: "none" as const,
+      actionText: "completed running",
+      targetText: "Daily codebase audit (0 vulnerabilities)",
+      timeText: "4 hours ago",
+      groupText: "Security Ops",
+      status: "read" as const,
+      tab: "general" as const,
+    },
+    {
+      id: "pop_gen_2",
+      senderName: "Billing Agent",
+      senderAvatar:
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150",
+      senderPresence: "online" as const,
+      actionText: "sent comments for",
+      targetText: "Stripe production subscription check",
+      timeText: "5 hours ago",
+      groupText: "FinOps",
+      status: "unread" as const,
+      tab: "general" as const,
+    },
+  ]);
+
+  useEffect(() => {
+    const unsubscribe = notificationStore.subscribe(() => {
+      setLocalNotifications([...notificationStore.getNotifications()]);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Merge any real incoming notifications that are not already present in the popover state
+  useEffect(() => {
+    const existingIds = new Set(popoverNotifs.map((n) => n.id));
+    const newNotifs = localNotifications.filter((n) => !existingIds.has(n.id));
+    if (newNotifs.length > 0) {
+      const mapped = newNotifs.map((n) => ({
+        id: n.id,
+        senderName: n.sender?.name || "System",
+        senderAvatar: "",
+        senderPresence: "none" as const,
+        actionText: "sent: " + n.title,
+        targetText: n.description,
+        timeText: n.time,
+        groupText: n.project,
+        status: n.status,
+        tab: "inbox" as const,
+      }));
+      setPopoverNotifs((prev) => [...mapped, ...prev]);
+    }
+  }, [localNotifications]);
+
+  const STATUS_DOT_COLORS: Record<string, string> = {
+    Online: "bg-[#33A579]",
+    Busy: "bg-[#E4664F]",
+    "In Meeting": "bg-[#F1C40F]",
+    "Focus Time": "bg-[#9B59B6]",
+    Away: "bg-[#A8A8A8]",
+    Offline: "bg-[#7F8C8D]",
+  };
+
+  const inboxUnreadCount = popoverNotifs.filter(
+    (n) => n.tab === "inbox" && n.status === "unread",
+  ).length;
+  const generalUnreadCount = 18; // Fixed matching image
+
+  const filteredNotifs = popoverNotifs.filter((n) => n.tab === selectedNotifTab);
+
+  const handleNotifItemClick = (id: string) => {
+    setPopoverNotifs(
+      popoverNotifs.map((n) => (n.id === id ? { ...n, status: "read" as const } : n)),
+    );
+    // Sync to store if it matches
+    if (localNotifications.some((n) => n.id === id)) {
+      notificationStore.markAsRead(id);
+    }
+  };
+
+  const handleMarkAllRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPopoverNotifs(popoverNotifs.map((n) => ({ ...n, status: "read" as const })));
+    notificationStore.markAllAsRead();
+    toast.success("Inbox marked as read");
+  };
+
   return (
-    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-[#E7E7EC] dark:border-[#323238] pb-6 mb-8 select-none">
+    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-[#E7E7EC] dark:border-[#323238] pb-6 mb-8 select-none relative z-30">
+      {/* Invisible backdrop to dismiss popovers */}
+      {(isNotifPopoverOpen || isProfilePopoverOpen) && (
+        <div
+          className="fixed inset-0 z-40 bg-transparent"
+          onClick={() => {
+            setIsNotifPopoverOpen(false);
+            setIsProfilePopoverOpen(false);
+            setIsStatusDropdownOpen(false);
+          }}
+        />
+      )}
+
       {/* Welcome Sandy Side */}
       <div className="flex items-center gap-3">
         <button
@@ -116,7 +334,7 @@ function TopNav({
       </div>
 
       {/* Search, Quick Add, Calendar, Notifications, Profile Badge Stacked Side-by-Side */}
-      <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+      <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto z-10">
         {/* Search Input bar */}
         <div className="relative w-full sm:w-auto flex-1 sm:flex-initial min-w-[200px] sm:min-w-[240px]">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A8A8A8]" />
@@ -146,39 +364,424 @@ function TopNav({
         </button>
 
         {/* Action icons + profile wrapper */}
-        <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+        <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto relative">
           <div className="flex items-center gap-2">
             {/* Calendar */}
-            <button
-              onClick={() => {
-                toast.info("Opening Calendar...");
-              }}
+            <Link
+              to="/calendar"
               className="h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center text-[#757575] hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all"
             >
               <Calendar className="w-[18px] h-[18px]" strokeWidth={1.75} />
-            </button>
+            </Link>
 
-            {/* Notifications */}
-            <button
-              onClick={() => {
-                toast.info("No new notifications");
-              }}
-              className="h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center text-[#757575] hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative"
-            >
-              <Bell className="w-[18px] h-[18px]" strokeWidth={1.75} />
-              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[#E4664F]" />
-            </button>
+            {/* Notifications Button & Popover container */}
+            <div className="relative">
+              <button
+                id="notif-bell-trigger"
+                onClick={() => {
+                  setIsNotifPopoverOpen(!isNotifPopoverOpen);
+                  setIsProfilePopoverOpen(false);
+                }}
+                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
+                  isNotifPopoverOpen
+                    ? "text-[#111111] dark:text-white border-[#A8A8A8]"
+                    : "text-[#757575]"
+                }`}
+              >
+                <Bell className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                {inboxUnreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#E4664F] text-white rounded-full flex items-center justify-center text-[9px] font-bold border border-white dark:border-[#242428]">
+                    {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {isNotifPopoverOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-12 w-[340px] sm:w-[385px] bg-gradient-to-b from-white/95 via-white/90 to-white/80 dark:from-[#1c1c1f]/95 dark:via-[#1c1c1f]/90 dark:to-[#18181b]/80 backdrop-blur-[24px] border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden text-left"
+                  >
+                    {/* Popover Header */}
+                    <div className="p-4 pb-2 flex items-center justify-between text-left">
+                      <span className="font-extrabold text-[15px] text-foreground">
+                        Notifications
+                      </span>
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+
+                    {/* Popover Tabs Header */}
+                    <div className="flex items-center justify-between px-4 border-b border-border bg-slate-50/40 dark:bg-slate-900/10">
+                      <div className="flex gap-4">
+                        {/* Inbox Tab */}
+                        <button
+                          onClick={() => setSelectedNotifTab("inbox")}
+                          className={`relative py-3.5 text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            selectedNotifTab === "inbox"
+                              ? "text-foreground border-b-2 border-foreground dark:border-white"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <span>Inbox</span>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-all ${
+                              selectedNotifTab === "inbox"
+                                ? "bg-[#111111] text-white dark:bg-white dark:text-[#111111]"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {inboxUnreadCount}
+                          </span>
+                        </button>
+
+                        {/* General Tab */}
+                        <button
+                          onClick={() => setSelectedNotifTab("general")}
+                          className={`relative py-3.5 text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            selectedNotifTab === "general"
+                              ? "text-foreground border-b-2 border-foreground dark:border-white"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <span>General</span>
+                          <span className="text-[10px] px-2 py-0.5 border border-border rounded-full font-bold text-muted-foreground bg-muted/30">
+                            {generalUnreadCount}
+                          </span>
+                        </button>
+
+                        {/* Archived Tab */}
+                        <button
+                          onClick={() => setSelectedNotifTab("archived")}
+                          className={`relative py-3.5 text-xs font-bold transition-all ${
+                            selectedNotifTab === "archived"
+                              ? "text-foreground border-b-2 border-foreground dark:border-white"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          Archived
+                        </button>
+                      </div>
+
+                      {/* Settings Cog */}
+                      <Link
+                        to="/settings"
+                        onClick={() => setIsNotifPopoverOpen(false)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all"
+                        title="Notification Settings"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Link>
+                    </div>
+
+                    {/* Popover List */}
+                    <div className="max-h-[350px] overflow-y-auto divide-y divide-border/60 scrollbar-thin">
+                      {filteredNotifs.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground flex flex-col items-center">
+                          <CheckCircle2 className="w-8 h-8 text-[#33A579] mb-2 opacity-60" />
+                          <p className="text-xs font-semibold">No alerts in this folder</p>
+                        </div>
+                      ) : (
+                        filteredNotifs.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => handleNotifItemClick(n.id)}
+                            className={`p-3.5 hover:bg-accent/40 transition-colors cursor-pointer text-left flex gap-3 relative ${
+                              n.status === "unread" ? "bg-[#5A82E8]/5 dark:bg-[#5A82E8]/10" : ""
+                            }`}
+                          >
+                            {/* Avatar with Presence dot */}
+                            <div className="relative shrink-0 mt-0.5">
+                              {n.senderAvatar ? (
+                                <img
+                                  src={n.senderAvatar}
+                                  alt={n.senderName}
+                                  className="w-10 h-10 rounded-full object-cover border border-border/80"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-[#5A82E8]/10 text-[#5A82E8] grid place-items-center text-xs font-extrabold font-mono border border-border">
+                                  {n.senderName.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              {n.senderPresence !== "none" && (
+                                <span
+                                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                                    n.senderPresence === "online"
+                                      ? "bg-[#33A579]"
+                                      : n.senderPresence === "busy"
+                                        ? "bg-[#E4664F]"
+                                        : "bg-[#F1C40F]"
+                                  }`}
+                                />
+                              )}
+                            </div>
+
+                            {/* Content body */}
+                            <div className="flex-1 min-w-0 pr-4">
+                              <div className="text-[13px] text-foreground leading-normal font-normal">
+                                <span className="font-bold text-foreground hover:underline mr-1">
+                                  {n.senderName}
+                                </span>
+                                <span className="text-muted-foreground mr-1">{n.actionText}</span>
+                                <span className="font-bold text-foreground hover:underline">
+                                  {n.targetText}
+                                </span>
+                              </div>
+
+                              <div className="text-[11px] text-muted-foreground mt-0.5 font-semibold flex items-center gap-1">
+                                <span>{n.timeText}</span>
+                                <span>•</span>
+                                <span className="hover:underline cursor-pointer">
+                                  {n.groupText}
+                                </span>
+                              </div>
+
+                              {/* CTA Actions */}
+                              {n.hasActions && (
+                                <div
+                                  className="flex items-center gap-2 mt-2"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    onClick={() => {
+                                      toast.error("Declined request");
+                                      setPopoverNotifs(
+                                        popoverNotifs.map((item) =>
+                                          item.id === n.id ? { ...item, hasActions: false } : item,
+                                        ),
+                                      );
+                                    }}
+                                    className="px-3 py-1.5 bg-card hover:bg-accent border border-border text-xs font-bold rounded-xl transition-all"
+                                  >
+                                    Decline
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      toast.success("Accepted request successfully!");
+                                      setPopoverNotifs(
+                                        popoverNotifs.map((item) =>
+                                          item.id === n.id ? { ...item, hasActions: false } : item,
+                                        ),
+                                      );
+                                    }}
+                                    className="px-3.5 py-1.5 bg-[#7000FF] hover:bg-[#6000E0] text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                                  >
+                                    Accept
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Attachments */}
+                              {n.attachmentName && (
+                                <div
+                                  className="flex items-center gap-1.5 mt-2 p-1.5 rounded-lg border border-border/80 bg-accent/20 hover:bg-accent/40 w-fit cursor-pointer transition-all"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.success(`Downloading ${n.attachmentName}...`);
+                                  }}
+                                >
+                                  <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                                  <span className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                                    {n.attachmentName}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Unread purple dot on the far right */}
+                            {n.status === "unread" && (
+                              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                                <span className="w-2 h-2 rounded-full bg-[#7000FF] dark:bg-[#8A6CE0]" />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Popover Footer with Action CTA */}
+                    <div className="border-t border-border p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          setIsNotifPopoverOpen(false);
+                          onNotificationClick?.();
+                        }}
+                        className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors px-1"
+                      >
+                        Quick Drawer
+                      </button>
+                      <Link
+                        to="/notifications"
+                        onClick={() => setIsNotifPopoverOpen(false)}
+                        className="flex items-center gap-1 text-xs font-bold text-[#7000FF] dark:text-[#8A6CE0] hover:underline"
+                      >
+                        <span>View Full Feed</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* Profile Badge */}
-          <button
-            onClick={() => toast.info("Sandy's Profile")}
-            className="h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:border-[#A8A8A8] transition-all"
-          >
-            <div className="w-8 h-8 rounded-full bg-[#5A82E8]/10 text-[#5A82E8] grid place-items-center text-[12px] font-semibold font-mono">
-              S
-            </div>
-          </button>
+          {/* Profile Badge Button & Popover container */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsProfilePopoverOpen(!isProfilePopoverOpen);
+                setIsNotifPopoverOpen(false);
+                setIsStatusDropdownOpen(false);
+              }}
+              className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:border-[#A8A8A8] transition-all relative ${
+                isProfilePopoverOpen ? "border-[#A8A8A8]" : ""
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full bg-[#5A82E8]/10 text-[#5A82E8] grid place-items-center text-[12px] font-semibold font-mono relative">
+                S
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white dark:border-[#242428] ${STATUS_DOT_COLORS[presenceStatus]}`}
+                />
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {isProfilePopoverOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-12 w-[320px] bg-gradient-to-b from-white/95 via-white/90 to-white/80 dark:from-[#1c1c1f]/95 dark:via-[#1c1c1f]/90 dark:to-[#18181b]/80 backdrop-blur-[24px] border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl z-50 text-left overflow-visible"
+                >
+                  {/* Portrait Card Image */}
+                  <div className="p-3 pb-0">
+                    <div className="relative h-[240px] w-full overflow-hidden rounded-xl border border-border">
+                      <img
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"
+                        alt="Sandy K."
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Floating Indicator */}
+                      <div className="absolute top-3 right-3 px-2.5 py-1 bg-black/75 backdrop-blur-md rounded-full text-white text-[10px] font-bold flex items-center gap-1 border border-white/10">
+                        <span
+                          className={`w-2 h-2 rounded-full ${STATUS_DOT_COLORS[presenceStatus]}`}
+                        />
+                        <span>{presenceStatus}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profile Body Info */}
+                  <div className="p-5 pt-4 pb-6 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xl font-extrabold text-foreground tracking-tight">
+                        Sandy K.
+                      </h4>
+                      <span
+                        className="w-4.5 h-4.5 rounded-full bg-[#10B981] flex items-center justify-center text-white shrink-0"
+                        title="Verified Member"
+                      >
+                        <Check className="w-3 h-3 stroke-[3.5]" />
+                      </span>
+                    </div>
+
+                    <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed font-medium">
+                      Lead Designer | Product Design Intern
+                    </p>
+
+                    <p className="text-[11px] font-bold text-muted-foreground mt-2">
+                      Yadiba Media Team • POD-1
+                    </p>
+
+                    {/* Divider */}
+                    <div className="my-4 border-t border-border/60" />
+
+                    {/* Stats & Status Selector Row */}
+                    <div className="flex items-center justify-between relative">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex items-center gap-1 cursor-help"
+                          title="138 Total Hours Logged"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-[12px] font-extrabold text-foreground">138h</span>
+                        </div>
+                        <div
+                          className="flex items-center gap-1 cursor-help"
+                          title="12 Active Tasks"
+                        >
+                          <CheckSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-[12px] font-extrabold text-foreground">12</span>
+                        </div>
+                        <div
+                          className="flex items-center gap-1 cursor-help"
+                          title="5 Projects Enrolled"
+                        >
+                          <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-[12px] font-extrabold text-foreground">5</span>
+                        </div>
+                      </div>
+
+                      {/* Status Selector Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-accent/60 dark:bg-accent/40 hover:bg-accent border border-border text-xs font-bold rounded-full transition-all"
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT_COLORS[presenceStatus]}`}
+                          />
+                          <span>Status</span>
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+
+                        <AnimatePresence>
+                          {isStatusDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9, y: -5 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.9, y: -5 }}
+                              className="absolute right-0 bottom-full mb-2 w-[140px] bg-white dark:bg-[#1c1c1f] border border-border rounded-xl shadow-lg z-[60] py-1"
+                            >
+                              {Object.keys(STATUS_DOT_COLORS).map((status) => (
+                                <button
+                                  key={status}
+                                  onClick={() => {
+                                    setPresenceStatus(status as any);
+                                    setIsStatusDropdownOpen(false);
+                                    toast.success(`Status updated to ${status}`);
+                                  }}
+                                  className="w-full text-left px-2.5 py-1.5 hover:bg-accent text-xs font-semibold flex items-center justify-between text-foreground"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT_COLORS[status]}`}
+                                    />
+                                    <span>{status}</span>
+                                  </div>
+                                  {presenceStatus === status && (
+                                    <Check className="w-3 h-3 text-[#5A82E8]" />
+                                  )}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>
@@ -201,7 +804,21 @@ export function AppShell({
   onQuickAdd?: () => void;
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const [unreadCount, setUnreadCount] = useState(
+    notificationStore.getNotifications().filter((n) => n.status === "unread").length,
+  );
+
+  useEffect(() => {
+    const unsubscribe = notificationStore.subscribe(() => {
+      setUnreadCount(
+        notificationStore.getNotifications().filter((n) => n.status === "unread").length,
+      );
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,19 +869,27 @@ export function AppShell({
                 {nav.map((item) => {
                   const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
                   const Icon = item.icon;
+                  const isBell = item.label === "Notifications";
                   return (
                     <Link
                       key={item.to}
                       to={item.to}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-3.5 px-4 h-11 rounded-2xl transition-colors ${
+                      className={`flex items-center justify-between px-4 h-11 rounded-2xl transition-colors ${
                         active
                           ? "bg-foreground text-background font-medium"
                           : "text-muted-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#242428] hover:text-foreground"
                       }`}
                     >
-                      <Icon className="w-5 h-5" strokeWidth={1.75} />
-                      <span className="text-[14px]">{item.label}</span>
+                      <div className="flex items-center gap-3.5">
+                        <Icon className="w-5 h-5" strokeWidth={1.75} />
+                        <span className="text-[14px]">{item.label}</span>
+                      </div>
+                      {isBell && unreadCount > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 bg-[#E4664F] text-white rounded-full flex items-center justify-center text-[9px] font-bold">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -294,10 +919,18 @@ export function AppShell({
             setSearchQuery={setSearchQuery}
             onQuickAdd={onQuickAdd}
             onMenuToggle={() => setIsMobileMenuOpen(true)}
+            onNotificationClick={() => setIsNotificationDrawerOpen(true)}
+            unreadCount={unreadCount}
           />
         )}
         {children}
       </main>
+
+      {/* Loooped Action Center Slide Drawer */}
+      <NotificationDrawer
+        isOpen={isNotificationDrawerOpen}
+        onClose={() => setIsNotificationDrawerOpen(false)}
+      />
     </div>
   );
 }

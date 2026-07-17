@@ -275,6 +275,7 @@ function EmployeeDashboardPage() {
   // New task form state
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskClient, setNewTaskClient] = useState("Internal");
+  const [customClientName, setCustomClientName] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<"HIGH" | "MEDIUM" | "LOW">("MEDIUM");
   const [newTaskHours, setNewTaskHours] = useState(1.5);
 
@@ -405,10 +406,13 @@ function EmployeeDashboardPage() {
       return;
     }
 
+    const clientName =
+      newTaskClient === "Other" ? customClientName.trim() || "Custom Project" : newTaskClient;
+
     const newTask: Task = {
       id: "t_" + Date.now(),
       title: newTaskTitle,
-      client: newTaskClient,
+      client: clientName,
       department: "General",
       due: "Due Today",
       priority: newTaskPriority,
@@ -435,6 +439,8 @@ function EmployeeDashboardPage() {
 
     toast.success(`Task Created: ${newTaskTitle}`);
     setNewTaskTitle("");
+    setNewTaskClient("Internal");
+    setCustomClientName("");
     setIsNewTaskOpen(false);
   };
 
@@ -522,11 +528,16 @@ function EmployeeDashboardPage() {
                   {dueTodayCount} tasks due today
                 </span>
                 <span className="text-[#E7E7EC] dark:text-[#323238]">•</span>
-                <span className="flex items-center gap-1.5">
+                <Link
+                  to="/calendar"
+                  className="flex items-center gap-1.5 text-[#757575] hover:text-[#5A82E8] dark:hover:text-[#8A6CE0] transition-colors cursor-pointer"
+                >
                   <Clock className="w-3.5 h-3.5 text-[#D79A2C]" />
-                  Next deadline:{" "}
-                  <span className="font-medium text-[#111111] dark:text-white">4:00 PM</span>
-                </span>
+                  <span>Next deadline:</span>{" "}
+                  <span className="font-semibold text-[#111111] dark:text-white underline decoration-dotted decoration-1 underline-offset-2">
+                    4:00 PM
+                  </span>
+                </Link>
               </div>
             </div>
 
@@ -666,13 +677,17 @@ function EmployeeDashboardPage() {
                           {/* Left Completion Toggle Checkbox */}
                           <button
                             onClick={(e) => toggleTaskCompletion(task.id, e)}
-                            className={`w-6 h-6 rounded-md border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:border-[#33A579] dark:hover:border-[#33A579] transition-colors shrink-0 ${
-                              task.completed ? "bg-[#33A579]/10 border-[#33A579]" : ""
+                            className={`w-5.5 h-5.5 rounded-md border grid place-items-center transition-all shrink-0 ${
+                              task.completed
+                                ? "bg-[#10B981] border-[#10B981] text-white shadow-sm scale-105"
+                                : "border-[#D1D1D6] dark:border-[#424248] hover:border-[#10B981] dark:hover:border-[#10B981] bg-transparent"
                             }`}
                           >
-                            <CheckCircle2
-                              className={`w-4 h-4 ${task.completed ? "text-[#33A579]" : "text-transparent"}`}
-                            />
+                            {task.completed ? (
+                              <Check className="w-3.5 h-3.5 stroke-[3.5] text-white" />
+                            ) : (
+                              <span className="w-2 h-2 rounded-full bg-transparent group-hover:bg-[#10B981]/20 transition-colors" />
+                            )}
                           </button>
 
                           <div className="min-w-0">
@@ -861,13 +876,21 @@ function EmployeeDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <span className="text-[12px] font-medium text-[#E4664F]">
+                        <div className="flex flex-col items-end gap-1.5 shrink-0 pl-3">
+                          <span className="text-[12px] font-semibold text-[#E4664F] tracking-tight">
                             {b.waitingTime}
                           </span>
-                          <div className="text-[11px] text-[#A8A8A8] mt-0.5 font-medium px-2 py-0.5 rounded-full bg-[#F4F4F7] dark:bg-[#1a1a1c] inline-block text-[10px]">
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                              b.stage === "Approval"
+                                ? "bg-[#8A6CE0]/10 text-[#8A6CE0] border-[#8A6CE0]/20"
+                                : b.stage === "Client Review"
+                                  ? "bg-[#33A579]/10 text-[#33A579] border-[#33A579]/20"
+                                  : "bg-[#5A82E8]/10 text-[#5A82E8] border-[#5A82E8]/20"
+                            }`}
+                          >
                             {b.stage}
-                          </div>
+                          </span>
                         </div>
                       </div>
 
@@ -1182,6 +1205,7 @@ function EmployeeDashboardPage() {
                       <option value="Helix Health">Helix Health</option>
                       <option value="Meridian">Meridian</option>
                       <option value="Aurora Coffee">Aurora Coffee</option>
+                      <option value="Other">Other (Custom client/project)...</option>
                     </select>
                   </div>
 
@@ -1198,6 +1222,22 @@ function EmployeeDashboardPage() {
                     </select>
                   </div>
                 </div>
+
+                {newTaskClient === "Other" && (
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <label className="text-[12px] font-medium text-[#757575]">
+                      Custom Client / Project Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Acme Corp, Project X"
+                      value={customClientName}
+                      onChange={(e) => setCustomClientName(e.target.value)}
+                      className="w-full h-10 px-3 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px] focus:outline-none"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <label className="text-[12px] font-medium text-[#757575]">
