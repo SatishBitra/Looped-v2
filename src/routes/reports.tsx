@@ -1,0 +1,152 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { AppShell, Card, SectionTitle, StatusPill } from "@/components/app-shell";
+import { Download } from "lucide-react";
+
+export const Route = createFileRoute("/reports")({
+  component: ReportsPage,
+});
+
+function ReportsPage() {
+  const weekly = [42, 51, 48, 60, 55, 38, 22];
+  const max = Math.max(...weekly);
+
+  return (
+    <AppShell breadcrumb={["Workspace", "Reports"]}>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl sm:text-[30px] font-semibold tracking-tight">Reports</h1>
+          <p className="text-[14px] text-muted-foreground mt-1">
+            Delivery, capacity, and budget health
+          </p>
+        </div>
+        <button className="h-10 px-4 rounded-[18px] bg-card border border-border text-[13px] font-medium flex items-center justify-center gap-2 w-full sm:w-auto">
+          <Download className="w-4 h-4" strokeWidth={1.75} /> Export
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        {[
+          { l: "On-time delivery", v: "92%", t: "green" as const },
+          { l: "Avg. cycle time", v: "6.4d", t: "blue" as const },
+          { l: "Utilization", v: "78%", t: "orange" as const },
+          { l: "Client CSAT", v: "4.7", t: "purple" as const },
+        ].map((k) => (
+          <Card key={k.l} className="p-5 sm:p-6">
+            <div className="text-[13px] text-muted-foreground mb-4">{k.l}</div>
+            <div className="flex items-end justify-between">
+              <div className="text-3xl sm:text-[36px] font-semibold tracking-tight leading-none">
+                {k.v}
+              </div>
+              <StatusPill tone={k.t}>+2.1%</StatusPill>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <Card className="lg:col-span-2 p-5 sm:p-6">
+          <SectionTitle title="Weekly hours logged" />
+          <div className="h-56 flex items-end gap-2 sm:gap-4 pt-6 border-t border-border">
+            {weekly.map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                <div
+                  className="w-full rounded-t-[12px] bg-foreground/85"
+                  style={{ height: `${(h / max) * 100}%` }}
+                />
+                <div className="text-[11px] text-muted-foreground">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-5 sm:p-6">
+          <SectionTitle title="Project mix" />
+          <div className="relative w-40 h-40 sm:w-44 sm:h-44 mx-auto my-2">
+            <svg viewBox="0 0 42 42" className="w-full h-full -rotate-90">
+              {
+                [
+                  { c: "#88A9F8", v: 34 },
+                  { c: "#74C98F", v: 26 },
+                  { c: "#F3D36B", v: 22 },
+                  { c: "#A48AF8", v: 18 },
+                ].reduce<{ segs: any[]; off: number }>(
+                  (acc, s) => {
+                    acc.segs.push(
+                      <circle
+                        key={s.c}
+                        cx="21"
+                        cy="21"
+                        r="15.9"
+                        fill="none"
+                        stroke={s.c}
+                        strokeWidth="6"
+                        strokeDasharray={`${s.v} ${100 - s.v}`}
+                        strokeDashoffset={-acc.off}
+                      />,
+                    );
+                    acc.off += s.v;
+                    return acc;
+                  },
+                  { segs: [], off: 0 },
+                ).segs
+              }
+            </svg>
+            <div className="absolute inset-0 grid place-items-center">
+              <div className="text-center">
+                <div className="text-xl sm:text-[24px] font-semibold">24</div>
+                <div className="text-[11px] text-muted-foreground">projects</div>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 mt-2">
+            {[
+              { c: "#88A9F8", l: "Brand", v: "34%" },
+              { c: "#74C98F", l: "Web", v: "26%" },
+              { c: "#F3D36B", l: "Video", v: "22%" },
+              { c: "#A48AF8", l: "Social", v: "18%" },
+            ].map((r) => (
+              <div key={r.l} className="flex items-center justify-between text-[12px]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: r.c }} />
+                  {r.l}
+                </div>
+                <span className="text-muted-foreground">{r.v}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-5 sm:p-6">
+        <SectionTitle title="Budget burn by project" />
+        <div className="flex flex-col gap-4">
+          {[
+            { p: "Q4 Rebrand", v: 68, t: "green" as const },
+            { p: "Product film", v: 91, t: "yellow" as const },
+            { p: "Social pack Q3", v: 112, t: "red" as const },
+            { p: "Design system", v: 44, t: "green" as const },
+            { p: "Podcast branding", v: 87, t: "yellow" as const },
+          ].map((r) => (
+            <div
+              key={r.p}
+              className="grid grid-cols-1 sm:grid-cols-[180px_1fr_60px] items-start sm:items-center gap-2 sm:gap-4"
+            >
+              <div className="text-[13px] font-medium">{r.p}</div>
+              <div className="h-2 rounded-full bg-surface overflow-hidden w-full">
+                <div
+                  className={`h-full rounded-full bg-status-${r.t}`}
+                  style={{ width: `${Math.min(r.v, 100)}%` }}
+                />
+              </div>
+              <div className="text-[12px] text-muted-foreground text-left sm:text-right">
+                {r.v}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </AppShell>
+  );
+}
