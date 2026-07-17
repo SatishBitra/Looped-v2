@@ -558,11 +558,11 @@ function CalendarPage() {
               <Activity className="w-4 h-4 text-[#5A82E8]" />
               <div className="text-left">
                 <div className="flex items-center gap-1.5 leading-none mb-0.5">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Capacity
                   </span>
                   <span
-                    className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                    className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-full ${
                       allocatedHoursToday > capacityTotal
                         ? "bg-[#E4664F]/10 text-[#E4664F]"
                         : allocatedHoursToday >= capacityTotal * 0.8
@@ -577,7 +577,7 @@ function CalendarPage() {
                         : "OK"}
                   </span>
                 </div>
-                <p className="text-sm font-bold text-[#111111] dark:text-white leading-none">
+                <p className="text-sm font-semibold text-[#111111] dark:text-white leading-none">
                   {allocatedHoursToday.toFixed(1)}{" "}
                   <span className="text-[10px] font-normal text-muted-foreground">
                     / {capacityTotal} hrs
@@ -600,7 +600,7 @@ function CalendarPage() {
                   style={{ width: `${capacityPercent}%` }}
                 />
               </div>
-              <p className="text-[9px] text-[#757575] dark:text-gray-400 font-semibold tracking-tight text-right leading-none">
+              <p className="text-[9px] text-[#757575] dark:text-gray-400 font-medium tracking-tight text-right leading-none">
                 {capacityRemaining.toFixed(1)} hrs left
               </p>
             </div>
@@ -632,7 +632,7 @@ function CalendarPage() {
                     className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-4 shadow-xl z-50 space-y-3"
                   >
                     <div className="flex items-center justify-between border-b pb-2">
-                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                         Show items
                       </span>
                       <button
@@ -649,7 +649,7 @@ function CalendarPage() {
                             birthday: allOn,
                           });
                         }}
-                        className="text-[10px] text-[#5A82E8] font-bold hover:underline"
+                        className="text-[10px] text-[#5A82E8] font-semibold hover:underline"
                       >
                         Toggle All
                       </button>
@@ -714,7 +714,7 @@ function CalendarPage() {
                     exit={{ opacity: 0, y: 8 }}
                     className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-1.5 shadow-xl z-50 space-y-0.5"
                   >
-                    <p className="text-[9px] font-bold text-muted-foreground p-2 uppercase tracking-wider border-b mb-1">
+                    <p className="text-[9px] font-semibold text-muted-foreground p-2 uppercase tracking-wider border-b mb-1">
                       Select project scope
                     </p>
                     {projectsList.map((proj) => (
@@ -764,7 +764,7 @@ function CalendarPage() {
             {/* Create Trigger Button */}
             <button
               onClick={() => setIsAddEventOpen(true)}
-              className="h-9 px-4 rounded-xl bg-[#5A82E8] text-white text-[12px] font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              className="h-9 px-4 rounded-xl bg-[#5A82E8] text-white text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} />
               Add Event
@@ -788,17 +788,17 @@ function CalendarPage() {
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
                   </span>
                   <div>
-                    <p className="text-[10px] font-extrabold opacity-80 uppercase tracking-widest">
+                    <p className="text-[10px] font-semibold opacity-80 uppercase tracking-widest">
                       Active tracking logs
                     </p>
-                    <p className="text-xs font-bold">
+                    <p className="text-xs font-semibold">
                       {activeTimerTask.title} — {activeTimerTask.project}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="font-mono font-bold text-md tracking-widest bg-black/25 px-3 py-1 rounded-xl">
+                  <div className="font-mono font-semibold text-md tracking-widest bg-black/25 px-3 py-1 rounded-xl">
                     {formatTimerTime(timerSeconds)}
                   </div>
                   <div className="flex items-center gap-1 bg-white/20 p-1 rounded-xl">
@@ -872,13 +872,13 @@ function CalendarPage() {
                       setSelectedDate(d.date);
                       toast.info(`Selected date: ${d.date}`);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex flex-col items-center min-w-[44px] transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex flex-col items-center min-w-[44px] transition-all ${
                       selectedDate === d.date
                         ? "bg-white dark:bg-[#111111] text-[#5A82E8] shadow-sm scale-105"
                         : "text-[#757575] hover:text-[#111111] dark:hover:text-white"
                     }`}
                   >
-                    <span className="text-[8px] uppercase font-semibold opacity-75">{d.name}</span>
+                    <span className="text-[8px] uppercase font-medium opacity-75">{d.name}</span>
                     <span className="text-sm mt-0.5">{d.num}</span>
                   </button>
                 ))}
@@ -891,7 +891,7 @@ function CalendarPage() {
                 {/* Header info */}
                 <div className="border-b border-border/40 pb-4 mb-6 flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <h3 className="text-md font-bold text-[#111111] dark:text-white flex items-center gap-2">
+                    <h3 className="text-md font-semibold text-[#111111] dark:text-white flex items-center gap-2">
                       <CalendarCheck2 className="w-4 h-4 text-[#5A82E8]" />
                       <span>Daily Chronological Timeline</span>
                     </h3>
@@ -901,7 +901,7 @@ function CalendarPage() {
                         : `Selected: ${selectedDate}`}
                     </p>
                   </div>
-                  <span className="text-[11px] bg-[#5A82E8]/10 text-[#5A82E8] px-3 py-1 rounded-full font-bold">
+                  <span className="text-[11px] bg-[#5A82E8]/10 text-[#5A82E8] px-3 py-1 rounded-full font-semibold">
                     {filteredEvents.filter((e) => e.date === selectedDate).length} events allocated
                   </span>
                 </div>
@@ -917,7 +917,7 @@ function CalendarPage() {
                       <div key={hourStr} className="group/row flex items-start gap-4">
                         {/* Hour Indicator */}
                         <div className="w-20 pt-1 text-right flex flex-col justify-start">
-                          <span className="font-mono text-xs font-bold text-[#111111] dark:text-gray-200">
+                          <span className="font-mono text-xs font-semibold text-[#111111] dark:text-gray-200">
                             {hourStr}
                           </span>
                           <span className="text-[9px] text-[#757575] font-semibold tracking-wider uppercase opacity-60">
@@ -965,7 +965,7 @@ function CalendarPage() {
                     if (nonTimelineEvents.length === 0) return null;
                     return (
                       <div className="pt-4 border-t border-dashed border-border/40">
-                        <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                           Other Daily Reminders
                         </h4>
                         <div className="flex flex-col gap-2">
@@ -1008,10 +1008,10 @@ function CalendarPage() {
                               : "bg-[#F4F4F7]/40 dark:bg-[#1c1c20]/40 text-muted-foreground hover:bg-slate-100"
                           }`}
                         >
-                          <span className="text-[10px] uppercase font-bold tracking-wider">
+                          <span className="text-[10px] uppercase font-semibold tracking-wider">
                             {day.name}
                           </span>
-                          <span className="text-lg font-bold mt-0.5">{day.num}</span>
+                          <span className="text-lg font-semibold mt-0.5">{day.num}</span>
                           {day.isToday && (
                             <span
                               className={`w-1.5 h-1.5 rounded-full ${isSel ? "bg-white" : "bg-[#5A82E8]"} mt-1`}
@@ -1059,7 +1059,7 @@ function CalendarPage() {
             {/* MONTH VIEW */}
             {currentView === "month" && (
               <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)]">
-                <div className="grid grid-cols-7 gap-1 text-center font-bold text-xs text-[#757575] pb-3 mb-2 border-b border-border/40">
+                <div className="grid grid-cols-7 gap-1 text-center font-semibold text-xs text-[#757575] pb-3 mb-2 border-b border-border/40">
                   <span>Mon</span>
                   <span>Tue</span>
                   <span>Wed</span>
@@ -1069,11 +1069,11 @@ function CalendarPage() {
                   <span>Sun</span>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1.5 min-h-[350px]">
+                <div className="grid grid-cols-7 gap-1 sm:gap-1.5 min-h-[220px] sm:min-h-[350px]">
                   {Array.from({ length: 2 }).map((_, i) => (
                     <div
                       key={`offset-${i}`}
-                      className="p-2 min-h-[70px] bg-[#F4F4F7]/20 dark:bg-[#1c1c20]/20 opacity-30 rounded-xl"
+                      className="p-1 sm:p-2 min-h-[40px] sm:min-h-[70px] bg-[#F4F4F7]/20 dark:bg-[#1c1c20]/20 opacity-30 rounded-lg sm:rounded-xl"
                     />
                   ))}
 
@@ -1088,38 +1088,62 @@ function CalendarPage() {
                       <div
                         key={dateStr}
                         onClick={() => setSelectedDate(dateStr)}
-                        className={`p-2 min-h-[80px] rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                        className={`p-1 sm:p-2 min-h-[50px] sm:min-h-[80px] rounded-lg sm:rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                           isSelected
                             ? "border-[#5A82E8] bg-[#5A82E8]/5 shadow-xs"
                             : "border-border/30 bg-white/30 dark:bg-[#242428]/20 hover:bg-black/[0.02]"
                         }`}
                       >
                         <span
-                          className={`text-[10px] font-extrabold ${isSelected ? "text-[#5A82E8]" : "text-muted-foreground"}`}
+                          className={`text-[10px] font-semibold ${isSelected ? "text-[#5A82E8]" : "text-muted-foreground"}`}
                         >
                           {dayNum}
                         </span>
 
                         <div className="space-y-0.5 mt-1">
-                          {dayEvts.slice(0, 2).map((e) => (
-                            <div
-                              key={e.id}
-                              className={`text-[8px] truncate px-1 py-0.5 rounded-sm font-semibold ${
-                                e.type === "task"
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                  : e.type === "meeting"
-                                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                              }`}
-                            >
-                              {e.title}
-                            </div>
-                          ))}
-                          {dayEvts.length > 2 && (
-                            <div className="text-[7px] text-[#757575] font-bold text-right">
-                              +{dayEvts.length - 2} more
-                            </div>
-                          )}
+                          {/* Desktop/Tablet view: show full text labeled pills */}
+                          <div className="hidden sm:block space-y-0.5">
+                            {dayEvts.slice(0, 2).map((e) => (
+                              <div
+                                key={e.id}
+                                className={`text-[8px] truncate px-1 py-0.5 rounded-sm font-semibold ${
+                                  e.type === "task"
+                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                    : e.type === "meeting"
+                                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                                      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                }`}
+                              >
+                                {e.title}
+                              </div>
+                            ))}
+                            {dayEvts.length > 2 && (
+                              <div className="text-[7px] text-[#757575] font-semibold text-right">
+                                +{dayEvts.length - 2} more
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Mobile view: show compact colored dots to prevent clutter */}
+                          <div className="flex sm:hidden flex-wrap gap-0.5 justify-center mt-1">
+                            {dayEvts.slice(0, 3).map((e) => (
+                              <span
+                                key={e.id}
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  e.type === "task"
+                                    ? "bg-blue-500"
+                                    : e.type === "meeting"
+                                      ? "bg-purple-500"
+                                      : "bg-amber-500"
+                                }`}
+                              />
+                            ))}
+                            {dayEvts.length > 3 && (
+                              <span className="text-[7px] text-muted-foreground font-semibold leading-none">
+                                +
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1131,7 +1155,7 @@ function CalendarPage() {
             {/* AGENDA VIEW */}
             {currentView === "agenda" && (
               <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)] max-h-[500px] overflow-y-auto">
-                <h3 className="text-md font-bold text-[#111111] dark:text-white border-b border-border/40 pb-3 mb-4">
+                <h3 className="text-md font-semibold text-[#111111] dark:text-white border-b border-border/40 pb-3 mb-4">
                   Agenda Action Items
                 </h3>
 
@@ -1141,7 +1165,7 @@ function CalendarPage() {
                     if (dayEvts.length === 0) return null;
                     return (
                       <div key={date} className="space-y-2">
-                        <h4 className="text-xs font-bold text-muted-foreground bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg">
+                        <h4 className="text-xs font-semibold text-muted-foreground bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg">
                           {date === "2026-07-16"
                             ? "📅 Today (16 July)"
                             : date === "2026-07-17"
@@ -1159,7 +1183,7 @@ function CalendarPage() {
                               className="p-3 bg-white/50 dark:bg-[#162135]/30 rounded-xl border border-border/40 hover:border-[#5A82E8]/40 transition-all cursor-pointer flex justify-between items-center"
                             >
                               <div>
-                                <span className="text-xs font-bold text-[#111111] dark:text-white">
+                                <span className="text-xs font-semibold text-[#111111] dark:text-white">
                                   {e.title}
                                 </span>
                                 <p className="text-[10px] text-muted-foreground">
@@ -1167,7 +1191,7 @@ function CalendarPage() {
                                 </p>
                               </div>
                               <span
-                                className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-bold ${
+                                className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-semibold ${
                                   e.type === "task"
                                     ? "bg-blue-100 text-blue-700"
                                     : e.type === "meeting"
@@ -1197,7 +1221,7 @@ function CalendarPage() {
                 <div className="flex items-start justify-between border-b border-border/40 pb-3.5">
                   <div className="space-y-1">
                     <span
-                      className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                      className={`text-[9px] uppercase font-semibold px-2 py-0.5 rounded-full ${
                         selectedEvent.type === "task"
                           ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                           : selectedEvent.type === "meeting"
@@ -1209,7 +1233,7 @@ function CalendarPage() {
                     >
                       {selectedEvent.type.replace("_", " ")}
                     </span>
-                    <h3 className="text-[15px] font-bold text-[#111111] dark:text-white mt-1.5 leading-tight">
+                    <h3 className="text-[15px] font-semibold text-[#111111] dark:text-white mt-1.5 leading-tight">
                       {selectedEvent.title}
                     </h3>
                     <p className="text-[11px] font-medium text-[#757575] dark:text-slate-400">
@@ -1251,7 +1275,7 @@ function CalendarPage() {
                       <span className="font-medium">
                         Task Priority:{" "}
                         <span
-                          className={`font-bold uppercase ${
+                          className={`font-semibold uppercase ${
                             selectedEvent.priority === "HIGH"
                               ? "text-rose-500"
                               : selectedEvent.priority === "MEDIUM"
@@ -1279,7 +1303,7 @@ function CalendarPage() {
                         href={selectedEvent.meetingLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[#5A82E8] hover:underline flex items-center gap-1 font-bold"
+                        className="text-[#5A82E8] hover:underline flex items-center gap-1 font-semibold"
                       >
                         Join Meet Call <ExternalLink className="w-3 h-3" />
                       </a>
@@ -1290,7 +1314,7 @@ function CalendarPage() {
                 {/* Description */}
                 {selectedEvent.description && (
                   <div className="bg-[#F4F4F7]/60 dark:bg-[#1c1c20]/60 p-3.5 rounded-2xl border border-border/30">
-                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                       Briefing / Notes
                     </h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
@@ -1302,7 +1326,7 @@ function CalendarPage() {
                 {/* Checklist */}
                 {selectedEvent.checklist && (
                   <div className="space-y-2">
-                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                       Subtask progress
                     </h4>
                     <div className="space-y-1.5">
@@ -1318,7 +1342,7 @@ function CalendarPage() {
                             <span className="w-4 h-4 rounded-full border border-gray-400 block" />
                           )}
                           <span
-                            className={`text-xs font-semibold ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
+                            className={`text-xs font-medium ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
                           >
                             {item.text}
                           </span>
@@ -1338,7 +1362,7 @@ function CalendarPage() {
                           setActiveTimerTaskId(null);
                           setTimerSeconds(0);
                         }}
-                        className="w-full h-10 rounded-xl bg-red-500 text-white font-bold text-xs flex items-center justify-center gap-2"
+                        className="w-full h-10 rounded-xl bg-red-500 text-white font-semibold text-xs flex items-center justify-center gap-2"
                       >
                         <Square className="w-3.5 h-3.5 fill-current" /> Stop tracking log
                       </button>
@@ -1350,7 +1374,7 @@ function CalendarPage() {
                           setIsTimerRunning(true);
                           toast.success(`Timer started for task "${selectedEvent.title}"`);
                         }}
-                        className="w-full h-10 rounded-xl bg-[#33A579] text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-[#2e946c] transition-colors shadow-sm"
+                        className="w-full h-10 rounded-xl bg-[#33A579] text-white font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[#2e946c] transition-colors shadow-sm"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" /> Start Focus Timer
                       </button>
@@ -1361,7 +1385,7 @@ function CalendarPage() {
                 {/* Approval actions */}
                 {selectedEvent.type === "approval" && (
                   <div className="pt-2 border-t border-border/40 space-y-2">
-                    <div className="text-[10px] font-bold text-muted-foreground flex justify-between">
+                    <div className="text-[10px] font-semibold text-muted-foreground flex justify-between">
                       <span>By: {selectedEvent.requestedBy}</span>
                       <span>{selectedEvent.approvalStage}</span>
                     </div>
@@ -1372,7 +1396,7 @@ function CalendarPage() {
                           setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
                           setSelectedEventId(null);
                         }}
-                        className="flex-1 h-9 bg-[#33A579] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5"
+                        className="flex-1 h-9 bg-[#33A579] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5"
                       >
                         <Check className="w-4 h-4" /> Approve
                       </button>
@@ -1380,7 +1404,7 @@ function CalendarPage() {
                         onClick={() => {
                           toast.error("Design handoff rejected with design logs");
                         }}
-                        className="flex-1 h-9 bg-[#F4F4F7] dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs"
+                        className="flex-1 h-9 bg-[#F4F4F7] dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-xs"
                       >
                         Reject
                       </button>
@@ -1391,7 +1415,7 @@ function CalendarPage() {
             ) : (
               <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-6 shadow-[var(--shadow-soft)] text-center py-20 space-y-3">
                 <CalendarIcon className="w-10 h-10 text-muted-foreground/30 mx-auto" />
-                <p className="text-sm font-bold text-muted-foreground">Select an item</p>
+                <p className="text-sm font-semibold text-muted-foreground">Select an item</p>
                 <p className="text-xs text-muted-foreground/80 max-w-[180px] mx-auto leading-normal">
                   Select any task or meeting in the chronologically structured timeline to launch
                   active trackers or view checklist logs.
@@ -1401,7 +1425,7 @@ function CalendarPage() {
 
             {/* UPCOMING CRITICAL DEADLINES */}
             <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)]">
-              <h4 className="text-[11px] font-extrabold text-[#757575] dark:text-[#A8A8A8] uppercase tracking-wider mb-3.5">
+              <h4 className="text-[11px] font-semibold text-[#757575] dark:text-[#A8A8A8] uppercase tracking-wider mb-3.5">
                 Upcoming Milestones
               </h4>
 
@@ -1415,14 +1439,14 @@ function CalendarPage() {
                       className="flex items-center justify-between p-3 bg-[#F4F4F7]/40 dark:bg-[#1c1c20]/40 rounded-xl border border-border/30"
                     >
                       <div>
-                        <p className="text-xs font-bold text-[#111111] dark:text-white truncate max-w-[130px]">
+                        <p className="text-xs font-semibold text-[#111111] dark:text-white truncate max-w-[130px]">
                           {d.title}
                         </p>
-                        <span className="text-[10px] text-rose-500 font-bold">
+                        <span className="text-[10px] text-rose-500 font-semibold">
                           {d.date === "2026-07-16" ? `Today, ${d.timeStart}` : d.date}
                         </span>
                       </div>
-                      <span className="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-extrabold uppercase">
+                      <span className="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold uppercase">
                         critical
                       </span>
                     </div>
@@ -1452,7 +1476,7 @@ function CalendarPage() {
               className="bg-white dark:bg-[#1c1c20] border border-border rounded-[24px] max-w-md w-full p-6 shadow-2xl z-10 relative space-y-4"
             >
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-md font-bold text-[#111111] dark:text-white">
+                <h3 className="text-md font-semibold text-[#111111] dark:text-white">
                   Add New Calendar Event
                 </h3>
                 <button
@@ -1466,7 +1490,9 @@ function CalendarPage() {
 
               <form onSubmit={handleCreateEvent} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground">EVENT TITLE</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    EVENT TITLE
+                  </label>
                   <input
                     type="text"
                     required
@@ -1479,7 +1505,9 @@ function CalendarPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground">TYPE</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      TYPE
+                    </label>
                     <select
                       value={newType}
                       onChange={(e) => setNewType(e.target.value as any)}
@@ -1495,7 +1523,9 @@ function CalendarPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground">PROJECT</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      PROJECT
+                    </label>
                     <select
                       value={newProject}
                       onChange={(e) => setNewProject(e.target.value)}
@@ -1512,7 +1542,7 @@ function CalendarPage() {
 
                 {newProject === "Other" && (
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                       CUSTOM PROJECT NAME
                     </label>
                     <input
@@ -1528,7 +1558,9 @@ function CalendarPage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground">DATE</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      DATE
+                    </label>
                     <input
                       type="text"
                       required
@@ -1539,7 +1571,7 @@ function CalendarPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                       START TIME
                     </label>
                     <input
@@ -1552,7 +1584,9 @@ function CalendarPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground">END TIME</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      END TIME
+                    </label>
                     <input
                       type="text"
                       placeholder="e.g. 10:30 AM"
@@ -1566,7 +1600,7 @@ function CalendarPage() {
                 {newType === "task" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-muted-foreground">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                         CAPACITY HOURS
                       </label>
                       <input
@@ -1578,7 +1612,7 @@ function CalendarPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-muted-foreground">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                         PRIORITY
                       </label>
                       <select
@@ -1597,7 +1631,7 @@ function CalendarPage() {
                 {newType === "meeting" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-muted-foreground">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                         LOCATION
                       </label>
                       <input
@@ -1609,7 +1643,7 @@ function CalendarPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-muted-foreground">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                         PARTICIPANTS
                       </label>
                       <input
@@ -1624,7 +1658,9 @@ function CalendarPage() {
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground">DESCRIPTION</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    DESCRIPTION
+                  </label>
                   <textarea
                     rows={2}
                     placeholder="Provide description or task specs..."
@@ -1638,13 +1674,13 @@ function CalendarPage() {
                   <button
                     type="button"
                     onClick={() => setIsAddEventOpen(false)}
-                    className="flex-1 h-10 bg-slate-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs"
+                    className="flex-1 h-10 bg-slate-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 h-10 bg-[#5A82E8] text-white font-bold rounded-xl text-xs shadow-md"
+                    className="flex-1 h-10 bg-[#5A82E8] text-white font-semibold rounded-xl text-xs shadow-md"
                   >
                     Create Event
                   </button>
@@ -1677,7 +1713,7 @@ function CalendarPage() {
               </div>
 
               <div className="space-y-1.5">
-                <h3 className="text-md font-bold text-[#111111] dark:text-white">
+                <h3 className="text-md font-semibold text-[#111111] dark:text-white">
                   Capacity Warning Triggered
                 </h3>
                 <p className="text-xs text-muted-foreground leading-normal font-medium">
@@ -1690,7 +1726,7 @@ function CalendarPage() {
               <div className="flex flex-col gap-2 pt-2">
                 <button
                   onClick={handleConfirmMoveAnyway}
-                  className="w-full h-10 bg-[#E4664F] text-white font-bold rounded-xl text-xs"
+                  className="w-full h-10 bg-[#E4664F] text-white font-semibold rounded-xl text-xs"
                 >
                   Save Anyway (Force Override)
                 </button>
@@ -1699,7 +1735,7 @@ function CalendarPage() {
                     setIsWarningOpen(false);
                     setPendingMoveEvent(null);
                   }}
-                  className="w-full h-10 bg-slate-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs"
+                  className="w-full h-10 bg-slate-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-xs"
                 >
                   Change Event Timing
                 </button>
@@ -1828,16 +1864,16 @@ function EventCard({
       <div className="space-y-1.5 flex-1 pr-3">
         {/* Top meta tags */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[9px] font-bold text-[#111111] dark:text-gray-300">
+          <span className="font-mono text-[9px] font-semibold text-[#111111] dark:text-gray-300">
             {event.timeStart} {event.timeEnd ? ` - ${event.timeEnd}` : ""}
           </span>
           <span className="text-[#A8A8A8] text-[8px]">•</span>
-          <span className={`text-[9px] font-bold px-2 py-0.2 rounded-md border ${theme.tag}`}>
+          <span className={`text-[9px] font-semibold px-2 py-0.2 rounded-md border ${theme.tag}`}>
             📂 {event.project}
           </span>
           {event.priority && (
             <span
-              className={`text-[8px] font-bold px-1.5 py-0.2 rounded-md ${
+              className={`text-[8px] font-semibold px-1.5 py-0.2 rounded-md ${
                 event.priority === "HIGH"
                   ? "bg-red-100 text-red-600 dark:bg-red-950/40"
                   : "bg-slate-100 text-slate-600 dark:bg-slate-800/40"
@@ -1849,13 +1885,13 @@ function EventCard({
         </div>
 
         {/* Title */}
-        <h4 className="text-sm font-bold text-[#111111] dark:text-white leading-tight tracking-tight">
+        <h4 className="text-sm font-semibold text-[#111111] dark:text-white leading-tight tracking-tight">
           {event.title}
         </h4>
 
         {/* Short description */}
         {event.description && (
-          <p className="text-[11px] text-[#757575] dark:text-gray-300 font-semibold line-clamp-1 leading-normal">
+          <p className="text-[11px] text-[#757575] dark:text-gray-300 font-medium line-clamp-1 leading-normal">
             {event.description}
           </p>
         )}
@@ -1863,13 +1899,13 @@ function EventCard({
         {/* Bottom meta stats */}
         <div className="flex items-center gap-3 pt-0.5">
           {event.hours && (
-            <div className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground">
+            <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground">
               <Clock className="w-3 h-3 opacity-70" />
               <span>{event.hours} hrs allocated</span>
             </div>
           )}
           {event.participants && (
-            <div className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground">
+            <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground">
               <Users className="w-3 h-3 opacity-70" />
               <span>{event.participants.length} attending</span>
             </div>
@@ -1884,14 +1920,14 @@ function EventCard({
             e.stopPropagation();
             setShowShiftDropdown(!showShiftDropdown);
           }}
-          className="h-7 px-2.5 rounded-lg bg-white dark:bg-[#1a1a1e] border border-border/80 text-[10px] font-bold hover:bg-slate-50 text-muted-foreground shadow-xs"
+          className="h-7 px-2.5 rounded-lg bg-white dark:bg-[#1a1a1e] border border-border/80 text-[10px] font-semibold hover:bg-slate-50 text-muted-foreground shadow-xs"
         >
           Shift Time
         </button>
 
         {showShiftDropdown && (
           <div className="absolute right-0 bottom-full mb-1.5 bg-white dark:bg-[#1a1a1e] border border-border/80 shadow-xl rounded-xl p-1.5 z-50 w-32 space-y-1">
-            <p className="text-[9px] font-bold text-center text-muted-foreground border-b pb-1 uppercase">
+            <p className="text-[9px] font-semibold text-center text-muted-foreground border-b pb-1 uppercase">
               Move slot:
             </p>
             {["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"].map((t) => (
@@ -1964,10 +2000,10 @@ function MiniEventCard({
         <span>{event.timeStart}</span>
         {event.hours && <span>{event.hours}h</span>}
       </div>
-      <h5 className="font-bold truncate mt-1 text-[#111111] dark:text-white text-[11px] tracking-tight">
+      <h5 className="font-semibold truncate mt-1 text-[#111111] dark:text-white text-[11px] tracking-tight">
         {event.title}
       </h5>
-      <p className="text-[9px] opacity-80 mt-0.5 font-semibold truncate">{event.project}</p>
+      <p className="text-[9px] opacity-80 mt-0.5 font-medium truncate">{event.project}</p>
     </div>
   );
 }

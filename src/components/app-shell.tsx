@@ -26,6 +26,8 @@ import {
   ChevronDown,
   Check,
   Paperclip,
+  Send,
+  ArrowLeft,
 } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -40,9 +42,6 @@ const nav = [
   { to: "/tasks", icon: CheckSquare, label: "Tasks" },
   { to: "/calendar", icon: Calendar, label: "Calendar" },
   { to: "/approvals", icon: ShieldCheck, label: "Approvals" },
-  { to: "/team", icon: Users, label: "Team" },
-  { to: "/notifications", icon: Bell, label: "Notifications" },
-  { to: "/messages", icon: MessageSquare, label: "Messages" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
   { to: "/clients", icon: Briefcase, label: "Clients" },
   { to: "/settings", icon: Settings, label: "Settings" },
@@ -54,6 +53,22 @@ function Sidebar() {
     notificationStore.getNotifications().filter((n) => n.status === "unread").length,
   );
 
+  const [sidebarLeft, setSidebarLeft] = useState<string>("16px");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1440) {
+        setSidebarLeft(`${(window.innerWidth - 1440) / 2 + 16}px`);
+      } else {
+        setSidebarLeft("16px");
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const unsubscribe = notificationStore.subscribe(() => {
       setUnreadCount(
@@ -64,7 +79,10 @@ function Sidebar() {
   }, []);
 
   return (
-    <aside className="hidden md:flex fixed left-4 top-4 bottom-4 w-[72px] z-30 flex flex-col items-center py-5 bg-card border border-border rounded-[32px] shadow-[var(--shadow-soft)]">
+    <aside
+      style={{ left: sidebarLeft }}
+      className="hidden md:flex fixed top-4 bottom-4 w-[72px] z-30 flex flex-col items-center py-5 bg-card border border-border rounded-[32px] shadow-[var(--shadow-soft)] transition-[left] duration-150"
+    >
       <Link
         to="/home"
         className="w-10 h-10 rounded-full bg-foreground text-background grid place-items-center font-semibold text-[15px] mb-6"
@@ -263,6 +281,154 @@ function TopNav({
     }
   }, [localNotifications]);
 
+  // Messages Popover State
+  const [isMessagesPopoverOpen, setIsMessagesPopoverOpen] = useState(false);
+  const [activeMessageThreadId, setActiveMessageThreadId] = useState<string | null>(null);
+  const [messagesSearchQuery, setMessagesSearchQuery] = useState("");
+  const [messageInputValue, setMessageInputValue] = useState("");
+  const [threads, setThreads] = useState([
+    {
+      id: "m_1",
+      name: "Northwind — Q4 Rebrand",
+      last: "Client approved the hero direction.",
+      time: "12m",
+      unread: 2,
+      color: "bg-[#88A9F8]",
+      messages: [
+        {
+          from: "Sara D.",
+          side: "them",
+          text: "Hero direction is locked. I'll ship the layered version tomorrow.",
+          time: "10:14 AM",
+        },
+        {
+          from: "Anna R.",
+          side: "me",
+          text: "Perfect. Please loop in Marta for the print variant.",
+          time: "10:16 AM",
+        },
+        {
+          from: "Marta L.",
+          side: "them",
+          text: "On it — I'll bring options to the pod sync.",
+          time: "10:18 AM",
+        },
+        {
+          from: "Client — Northwind",
+          side: "them",
+          text: "Approving the direction. Excited to see it come together.",
+          time: "10:32 AM",
+        },
+      ],
+    },
+    {
+      id: "m_2",
+      name: "Design pod",
+      last: "Sara: pushed the token updates.",
+      time: "1h",
+      unread: 0,
+      color: "bg-[#74C98F]",
+      messages: [
+        {
+          from: "Sara D.",
+          side: "them",
+          text: "Pushed the design token updates.",
+          time: "09:00 AM",
+        },
+      ],
+    },
+    {
+      id: "m_3",
+      name: "Kite Motors — Film",
+      last: "Luca: sending cut v3 tonight.",
+      time: "2h",
+      unread: 0,
+      color: "bg-[#A48AF8]",
+      messages: [
+        {
+          from: "Luca",
+          side: "them",
+          text: "Sending cut v3 tonight for feedback.",
+          time: "08:15 AM",
+        },
+      ],
+    },
+  ]);
+
+  const handleSendMessage = () => {
+    if (!messageInputValue.trim() || !activeMessageThreadId) return;
+    setThreads(
+      threads.map((t) => {
+        if (t.id === activeMessageThreadId) {
+          return {
+            ...t,
+            last: messageInputValue,
+            time: "now",
+            unread: 0,
+            messages: [
+              ...t.messages,
+              { from: "Sandy K.", side: "me", text: messageInputValue, time: "Just now" },
+            ],
+          };
+        }
+        return t;
+      }),
+    );
+    setMessageInputValue("");
+  };
+
+  // Team Popover State
+  const [isTeamPopoverOpen, setIsTeamPopoverOpen] = useState(false);
+  const [teamSearchQuery, setTeamSearchQuery] = useState("");
+  const teamMembers = [
+    {
+      id: "emp-1",
+      name: "Sandy M",
+      avatar:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+      role: "Frontend Developer",
+      status: "Online",
+      activity: "Optimizing glassmorphism CSS render loops",
+      pod: "Pod Alpha",
+    },
+    {
+      id: "emp-2",
+      name: "Luca R",
+      avatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
+      role: "Motion Designer",
+      status: "In Meeting",
+      activity: "Client alignment on ACME film project",
+      pod: "Pod Alpha",
+    },
+    {
+      id: "emp-3",
+      name: "Sara D",
+      avatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200",
+      role: "Brand Designer",
+      status: "Focus Time",
+      activity: "Pushed design token updates for blank site",
+      pod: "Pod Beta",
+    },
+    {
+      id: "emp-4",
+      name: "Marta L",
+      avatar:
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
+      role: "Production Artist",
+      status: "Online",
+      activity: "Rendering print variants for Northwind Q4",
+      pod: "Pod Beta",
+    },
+  ];
+
+  const filteredTeam = teamMembers.filter(
+    (m) =>
+      m.name.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
+      m.role.toLowerCase().includes(teamSearchQuery.toLowerCase()),
+  );
+
   const STATUS_DOT_COLORS: Record<string, string> = {
     Online: "bg-[#33A579]",
     Busy: "bg-[#E4664F]",
@@ -299,13 +465,18 @@ function TopNav({
   return (
     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-[#E7E7EC] dark:border-[#323238] pb-6 mb-8 select-none relative z-30">
       {/* Invisible backdrop to dismiss popovers */}
-      {(isNotifPopoverOpen || isProfilePopoverOpen) && (
+      {(isNotifPopoverOpen ||
+        isProfilePopoverOpen ||
+        isMessagesPopoverOpen ||
+        isTeamPopoverOpen) && (
         <div
           className="fixed inset-0 z-40 bg-transparent"
           onClick={() => {
             setIsNotifPopoverOpen(false);
             setIsProfilePopoverOpen(false);
             setIsStatusDropdownOpen(false);
+            setIsMessagesPopoverOpen(false);
+            setIsTeamPopoverOpen(false);
           }}
         />
       )}
@@ -373,6 +544,341 @@ function TopNav({
             >
               <Calendar className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </Link>
+
+            {/* Messages Button & Popover container */}
+            <div className="relative">
+              <button
+                id="messages-popover-trigger"
+                onClick={() => {
+                  setIsMessagesPopoverOpen(!isMessagesPopoverOpen);
+                  setIsNotifPopoverOpen(false);
+                  setIsProfilePopoverOpen(false);
+                  setIsTeamPopoverOpen(false);
+                }}
+                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
+                  isMessagesPopoverOpen
+                    ? "text-[#111111] dark:text-white border-[#A8A8A8]"
+                    : "text-[#757575]"
+                }`}
+              >
+                <MessageSquare className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                {threads.some((t) => t.unread > 0) && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#E4664F] text-white rounded-full flex items-center justify-center text-[9px] font-bold border border-white dark:border-[#242428]">
+                    {threads.reduce((acc, t) => acc + t.unread, 0)}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {isMessagesPopoverOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-12 w-[290px] sm:w-[360px] bg-gradient-to-b from-white/95 via-white/90 to-white/80 dark:from-[#1c1c1f]/95 dark:via-[#1c1c1f]/90 dark:to-[#18181b]/80 backdrop-blur-[24px] border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden text-left"
+                  >
+                    {activeMessageThreadId ? (
+                      /* Active Conversation Chat View */
+                      <div className="flex flex-col h-[380px]">
+                        {/* Header */}
+                        <div className="p-4 border-b border-border flex items-center gap-3 bg-slate-50/40 dark:bg-slate-900/10">
+                          <button
+                            onClick={() => setActiveMessageThreadId(null)}
+                            className="h-8 w-8 rounded-xl bg-accent hover:bg-accent/80 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                          </button>
+                          <span
+                            className="w-8 h-8 rounded-full shrink-0"
+                            style={{
+                              background:
+                                threads.find((t) => t.id === activeMessageThreadId)?.color ===
+                                "bg-[#88A9F8]"
+                                  ? "#88A9F8"
+                                  : threads.find((t) => t.id === activeMessageThreadId)?.color ===
+                                      "bg-[#74C98F]"
+                                    ? "#74C98F"
+                                    : "#A48AF8",
+                            }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-extrabold text-[14px] text-foreground block truncate">
+                              {threads.find((t) => t.id === activeMessageThreadId)?.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              Active Chat
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Messages List Area */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                          {threads
+                            .find((t) => t.id === activeMessageThreadId)
+                            ?.messages.map((m, index) => (
+                              <div
+                                key={index}
+                                className={`flex flex-col ${m.side === "me" ? "items-end" : "items-start"}`}
+                              >
+                                <span className="text-[10px] font-semibold text-muted-foreground mb-0.5">
+                                  {m.from}
+                                </span>
+                                <div
+                                  className={`px-3 py-2 rounded-2xl max-w-[85%] text-[12px] leading-relaxed ${
+                                    m.side === "me"
+                                      ? "bg-[#7000FF] text-white rounded-tr-none"
+                                      : "bg-accent/60 dark:bg-[#242428] text-foreground rounded-tl-none"
+                                  }`}
+                                >
+                                  {m.text}
+                                </div>
+                                <span className="text-[9px] text-muted-foreground mt-0.5 font-semibold">
+                                  {m.time}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Message Input Area */}
+                        <div className="p-3 border-t border-border bg-slate-50/30 dark:bg-slate-900/5 flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="Type a message..."
+                            value={messageInputValue}
+                            onChange={(e) => setMessageInputValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSendMessage();
+                            }}
+                            className="flex-1 h-9 px-3.5 rounded-xl bg-white dark:bg-[#242428] border border-border text-[12px] placeholder:text-[#A8A8A8] focus:outline-none"
+                          />
+                          <button
+                            onClick={handleSendMessage}
+                            className="h-9 w-9 bg-[#7000FF] hover:bg-[#6000E0] text-white rounded-xl flex items-center justify-center shadow-sm transition-all shrink-0"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Conversation Threads List View */
+                      <div className="flex flex-col h-[380px]">
+                        {/* Header */}
+                        <div className="p-4 pb-2 flex items-center justify-between">
+                          <span className="font-extrabold text-[15px] text-foreground">
+                            Messages
+                          </span>
+                          <span className="text-[10px] bg-[#7000FF]/10 text-[#7000FF] dark:text-[#8A6CE0] px-2 py-0.5 rounded-full font-bold">
+                            Live Chats
+                          </span>
+                        </div>
+
+                        {/* Search Conversation */}
+                        <div className="px-4 py-2 relative">
+                          <Search className="w-3.5 h-3.5 absolute left-7 top-1/2 -translate-y-1/2 text-[#A8A8A8]" />
+                          <input
+                            type="text"
+                            placeholder="Search chats..."
+                            value={messagesSearchQuery}
+                            onChange={(e) => setMessagesSearchQuery(e.target.value)}
+                            className="h-8 pl-8 pr-3 w-full rounded-xl bg-accent/40 text-[12px] placeholder:text-[#A8A8A8] focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Thread List Area */}
+                        <div className="flex-1 overflow-y-auto px-2 py-1">
+                          {threads
+                            .filter((t) =>
+                              t.name.toLowerCase().includes(messagesSearchQuery.toLowerCase()),
+                            )
+                            .map((t) => (
+                              <button
+                                key={t.id}
+                                onClick={() => {
+                                  setActiveMessageThreadId(t.id);
+                                  // Reset unread count on click
+                                  setThreads(
+                                    threads.map((item) =>
+                                      item.id === t.id ? { ...item, unread: 0 } : item,
+                                    ),
+                                  );
+                                }}
+                                className="w-full text-left p-2.5 rounded-xl hover:bg-accent/50 dark:hover:bg-accent/10 transition-all flex items-center gap-3 relative"
+                              >
+                                <span
+                                  className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center font-bold text-[11px] text-white"
+                                  style={{
+                                    background:
+                                      t.color === "bg-[#88A9F8]"
+                                        ? "#88A9F8"
+                                        : t.color === "bg-[#74C98F]"
+                                          ? "#74C98F"
+                                          : "#A48AF8",
+                                  }}
+                                >
+                                  {t.name.slice(0, 1)}
+                                </span>
+                                <div className="flex-1 min-w-0 pr-6">
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <span className="text-[12px] font-bold text-foreground truncate block">
+                                      {t.name}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground shrink-0 ml-1.5 font-semibold">
+                                      {t.time}
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-muted-foreground truncate block font-medium">
+                                    {t.last}
+                                  </span>
+                                </div>
+                                {t.unread > 0 && (
+                                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#E4664F] text-white text-[9px] font-bold flex items-center justify-center">
+                                    {t.unread}
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                        </div>
+
+                        {/* View All Messages Button */}
+                        <div className="border-t border-border p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
+                          <Link
+                            to="/messages"
+                            onClick={() => setIsMessagesPopoverOpen(false)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-[#5A82E8] hover:text-[#4a72d8] hover:underline"
+                          >
+                            <span>Open Dedicated Workspace</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Team Button & Popover container */}
+            <div className="relative">
+              <button
+                id="team-popover-trigger"
+                onClick={() => {
+                  setIsTeamPopoverOpen(!isTeamPopoverOpen);
+                  setIsNotifPopoverOpen(false);
+                  setIsProfilePopoverOpen(false);
+                  setIsMessagesPopoverOpen(false);
+                }}
+                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
+                  isTeamPopoverOpen
+                    ? "text-[#111111] dark:text-white border-[#A8A8A8]"
+                    : "text-[#757575]"
+                }`}
+              >
+                <Users className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </button>
+
+              <AnimatePresence>
+                {isTeamPopoverOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-12 w-[290px] sm:w-[350px] bg-gradient-to-b from-white/95 via-white/90 to-white/80 dark:from-[#1c1c1f]/95 dark:via-[#1c1c1f]/90 dark:to-[#18181b]/80 backdrop-blur-[24px] border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden text-left"
+                  >
+                    <div className="flex flex-col h-[380px]">
+                      {/* Header */}
+                      <div className="p-4 pb-2 flex items-center justify-between">
+                        <span className="font-extrabold text-[15px] text-foreground">
+                          Team Members
+                        </span>
+                        <span className="text-[10px] bg-[#33A579]/10 text-[#33A579] px-2 py-0.5 rounded-full font-bold">
+                          {teamMembers.filter((m) => m.status === "Online").length} Active Now
+                        </span>
+                      </div>
+
+                      {/* Search Team */}
+                      <div className="px-4 py-2 relative">
+                        <Search className="w-3.5 h-3.5 absolute left-7 top-1/2 -translate-y-1/2 text-[#A8A8A8]" />
+                        <input
+                          type="text"
+                          placeholder="Search members..."
+                          value={teamSearchQuery}
+                          onChange={(e) => setTeamSearchQuery(e.target.value)}
+                          className="h-8 pl-8 pr-3 w-full rounded-xl bg-accent/40 text-[12px] placeholder:text-[#A8A8A8] focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Team List Area */}
+                      <div className="flex-1 overflow-y-auto px-2 py-1">
+                        {filteredTeam.map((m) => (
+                          <div
+                            key={m.id}
+                            className="p-2 rounded-xl hover:bg-accent/30 transition-all flex items-start gap-3 relative group"
+                          >
+                            <div className="relative shrink-0">
+                              <img
+                                src={m.avatar}
+                                alt={m.name}
+                                referrerPolicy="no-referrer"
+                                className="w-9 h-9 rounded-full object-cover border border-border"
+                              />
+                              <span
+                                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white dark:border-[#1a1a1c] ${
+                                  m.status === "Online"
+                                    ? "bg-[#33A579]"
+                                    : m.status === "In Meeting"
+                                      ? "bg-[#F1C40F]"
+                                      : m.status === "Focus Time"
+                                        ? "bg-[#9B59B6]"
+                                        : "bg-[#A8A8A8]"
+                                }`}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 pr-14">
+                              <span className="text-[12px] font-bold text-foreground block truncate">
+                                {m.name}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground block truncate font-medium">
+                                {m.role} •{" "}
+                                <span className="font-semibold text-accent-foreground">
+                                  {m.pod}
+                                </span>
+                              </span>
+                              <span className="text-[10px] text-muted-foreground block italic truncate mt-0.5 font-medium">
+                                "{m.activity}"
+                              </span>
+                            </div>
+
+                            {/* Nudge/Ping Button */}
+                            <button
+                              onClick={() => {
+                                toast.success(`Sent nudge to ${m.name}!`);
+                              }}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 px-2 py-1 bg-[#7000FF]/10 text-[#7000FF] hover:bg-[#7000FF] hover:text-white rounded-lg text-[10px] font-bold transition-all shadow-sm"
+                            >
+                              Nudge
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* View Dedicated Team Directory */}
+                      <div className="border-t border-border p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
+                        <Link
+                          to="/team"
+                          onClick={() => setIsTeamPopoverOpen(false)}
+                          className="flex items-center gap-1.5 text-xs font-bold text-[#5A82E8] hover:text-[#4a72d8] hover:underline"
+                        >
+                          <span>Open Team Directory</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Notifications Button & Popover container */}
             <div className="relative">
@@ -805,6 +1311,12 @@ export function AppShell({
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+  const [isUniversalQuickAddOpen, setIsUniversalQuickAddOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskClient, setNewTaskClient] = useState("Internal");
+  const [newTaskPriority, setNewTaskPriority] = useState<"HIGH" | "MEDIUM" | "LOW">("MEDIUM");
+  const [newTaskHours, setNewTaskHours] = useState(1.5);
+
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const [unreadCount, setUnreadCount] = useState(
@@ -912,12 +1424,12 @@ export function AppShell({
         )}
       </AnimatePresence>
 
-      <main className="pl-4 pr-4 md:pl-[104px] md:pr-6 py-6 transition-all duration-300">
+      <main className="pl-4 pr-4 md:pl-[104px] md:pr-6 py-6 transition-all duration-300 max-w-[1440px] mx-auto w-full">
         {!hideTopNav && (
           <TopNav
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            onQuickAdd={onQuickAdd}
+            onQuickAdd={onQuickAdd || (() => setIsUniversalQuickAddOpen(true))}
             onMenuToggle={() => setIsMobileMenuOpen(true)}
             onNotificationClick={() => setIsNotificationDrawerOpen(true)}
             unreadCount={unreadCount}
@@ -931,6 +1443,135 @@ export function AppShell({
         isOpen={isNotificationDrawerOpen}
         onClose={() => setIsNotificationDrawerOpen(false)}
       />
+
+      {/* Universal Quick Add Task Modal */}
+      <AnimatePresence>
+        {isUniversalQuickAddOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsUniversalQuickAddOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-[#1c1c20] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] max-w-md w-full p-6 shadow-2xl z-50 relative space-y-5 text-left"
+            >
+              <div className="flex items-center justify-between border-b border-[#E7E7EC] dark:border-[#323238] pb-3">
+                <h3 className="text-[17px] font-medium text-foreground flex items-center gap-2">
+                  <span className="text-[#5A82E8]">＋</span> Create New Task
+                </h3>
+                <button
+                  onClick={() => setIsUniversalQuickAddOpen(false)}
+                  className="text-muted-foreground hover:text-foreground p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newTaskTitle.trim()) {
+                    toast.error("Please provide a task title");
+                    return;
+                  }
+                  toast.success(`Task Created: ${newTaskTitle}`);
+                  setNewTaskTitle("");
+                  setIsUniversalQuickAddOpen(false);
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Task Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Design Pitch Deck"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    className="w-full h-10 px-3.5 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px] bg-transparent focus:outline-none focus:ring-1 focus:ring-[#5A82E8]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Client
+                    </label>
+                    <select
+                      value={newTaskClient}
+                      onChange={(e) => setNewTaskClient(e.target.value)}
+                      className="w-full h-10 px-2.5 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px] bg-transparent dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#5A82E8]"
+                    >
+                      <option value="Internal">Internal</option>
+                      <option value="ThreadSense AI">ThreadSense AI</option>
+                      <option value="Helix Health">Helix Health</option>
+                      <option value="Meridian">Meridian</option>
+                      <option value="Aurora Coffee">Aurora Coffee</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Priority
+                    </label>
+                    <select
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                      className="w-full h-10 px-2.5 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px] bg-transparent dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-[#5A82E8]"
+                    >
+                      <option value="HIGH">HIGH</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="LOW">LOW</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Assigned Hours (Capacity allocation)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    max="12"
+                    value={newTaskHours}
+                    onChange={(e) => setNewTaskHours(parseFloat(e.target.value))}
+                    className="w-full h-10 px-3.5 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px] bg-transparent focus:outline-none focus:ring-1 focus:ring-[#5A82E8]"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsUniversalQuickAddOpen(false)}
+                    className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-foreground text-[13px] font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 h-10 rounded-xl bg-[#5A82E8] hover:bg-[#4a72d8] text-white text-[13px] font-medium transition-colors shadow-sm"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
