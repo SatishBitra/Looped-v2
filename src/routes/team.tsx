@@ -420,7 +420,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
   },
 ];
 
-function TeamPage() {
+export function TeamPage() {
   // --- Core States ---
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [archivedEmployees, setArchivedEmployees] = useState<Employee[]>([]);

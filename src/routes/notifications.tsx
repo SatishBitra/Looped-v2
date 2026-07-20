@@ -40,7 +40,7 @@ export const Route = createFileRoute("/notifications")({
   component: NotificationsPage,
 });
 
-function NotificationsPage() {
+export function NotificationsPage() {
   // Sync with global store
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [settings, setSettings] = useState(notificationStore.getSettings());

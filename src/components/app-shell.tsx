@@ -29,11 +29,17 @@ import {
   Send,
   ArrowLeft,
 } from "lucide-react";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode, createContext, useContext, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { notificationStore } from "@/lib/notifications-store";
 import { NotificationDrawer } from "./notification-drawer";
+
+export const ShellContext = createContext({ isInsideModal: false });
+
+const MessagesPage = lazy(() => import("@/routes/messages").then(m => ({ default: m.MessagesPage })));
+const TeamPage = lazy(() => import("@/routes/team").then(m => ({ default: m.TeamPage })));
+const NotificationsPage = lazy(() => import("@/routes/notifications").then(m => ({ default: m.NotificationsPage })));
 
 const nav = [
   { to: "/home", icon: Home, label: "Home" },
@@ -136,6 +142,7 @@ function TopNav({
   onMenuToggle,
   onNotificationClick,
   unreadCount = 0,
+  onOpenModal,
 }: {
   searchQuery?: string;
   setSearchQuery?: (val: string) => void;
@@ -143,6 +150,7 @@ function TopNav({
   onMenuToggle?: () => void;
   onNotificationClick?: () => void;
   unreadCount?: number;
+  onOpenModal?: (type: "messages" | "team" | "notifications" | null) => void;
 }) {
   const [isNotifPopoverOpen, setIsNotifPopoverOpen] = useState(false);
   const [isProfilePopoverOpen, setIsProfilePopoverOpen] = useState(false);
@@ -741,15 +749,17 @@ function TopNav({
                         </div>
 
                         {/* View All Messages Button */}
-                        <div className="border-t border-border p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
-                          <Link
-                            to="/messages"
-                            onClick={() => setIsMessagesPopoverOpen(false)}
-                            className="flex items-center gap-1.5 text-xs font-bold text-[#5A82E8] hover:text-[#4a72d8] hover:underline"
+                        <div className="border-t border-[#E7E7EC] dark:border-[#323238] p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
+                          <button
+                            onClick={() => {
+                              setIsMessagesPopoverOpen(false);
+                              onOpenModal?.("messages");
+                            }}
+                            className="w-full h-10 rounded-xl bg-[#111111] dark:bg-white text-white dark:text-[#111111] hover:opacity-90 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                           >
-                            <span>Open Dedicated Workspace</span>
+                            <span>View Messenger</span>
                             <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -864,15 +874,17 @@ function TopNav({
                       </div>
 
                       {/* View Dedicated Team Directory */}
-                      <div className="border-t border-border p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
-                        <Link
-                          to="/team"
-                          onClick={() => setIsTeamPopoverOpen(false)}
-                          className="flex items-center gap-1.5 text-xs font-bold text-[#5A82E8] hover:text-[#4a72d8] hover:underline"
+                      <div className="border-t border-[#E7E7EC] dark:border-[#323238] p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
+                        <button
+                          onClick={() => {
+                            setIsTeamPopoverOpen(false);
+                            onOpenModal?.("team");
+                          }}
+                          className="w-full h-10 rounded-xl bg-[#111111] dark:bg-white text-white dark:text-[#111111] hover:opacity-90 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                         >
-                          <span>Open Team Directory</span>
+                          <span>View Team Directory</span>
                           <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </motion.div>
@@ -1101,10 +1113,10 @@ function TopNav({
                               )}
                             </div>
 
-                            {/* Unread purple dot on the far right */}
+                            {/* Unread black/white dot on the far right */}
                             {n.status === "unread" && (
                               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                                <span className="w-2 h-2 rounded-full bg-[#7000FF] dark:bg-[#8A6CE0]" />
+                                <span className="w-2 h-2 rounded-full bg-[#111111] dark:bg-white" />
                               </div>
                             )}
                           </div>
@@ -1113,24 +1125,17 @@ function TopNav({
                     </div>
 
                     {/* Popover Footer with Action CTA */}
-                    <div className="border-t border-border p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
+                    <div className="border-t border-[#E7E7EC] dark:border-[#323238] p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
                       <button
                         onClick={() => {
                           setIsNotifPopoverOpen(false);
-                          onNotificationClick?.();
+                          onOpenModal?.("notifications");
                         }}
-                        className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors px-1"
-                      >
-                        Quick Drawer
-                      </button>
-                      <Link
-                        to="/notifications"
-                        onClick={() => setIsNotifPopoverOpen(false)}
-                        className="flex items-center gap-1 text-xs font-bold text-[#7000FF] dark:text-[#8A6CE0] hover:underline"
+                        className="w-full h-10 rounded-xl bg-[#111111] dark:bg-white text-white dark:text-[#111111] hover:opacity-90 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                       >
                         <span>View Full Feed</span>
                         <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -1309,6 +1314,9 @@ export function AppShell({
   setSearchQuery?: (val: string) => void;
   onQuickAdd?: () => void;
 }) {
+  const { isInsideModal } = useContext(ShellContext);
+
+  const [activeModal, setActiveModal] = useState<"messages" | "team" | "notifications" | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isUniversalQuickAddOpen, setIsUniversalQuickAddOpen] = useState(false);
@@ -1331,6 +1339,14 @@ export function AppShell({
     });
     return unsubscribe;
   }, []);
+
+  if (isInsideModal) {
+    return (
+      <div className="w-full h-full overflow-y-auto pr-1">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -1433,6 +1449,7 @@ export function AppShell({
             onMenuToggle={() => setIsMobileMenuOpen(true)}
             onNotificationClick={() => setIsNotificationDrawerOpen(true)}
             unreadCount={unreadCount}
+            onOpenModal={setActiveModal}
           />
         )}
         {children}
@@ -1568,6 +1585,62 @@ export function AppShell({
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Full-Screen Premium Modal Popups for Messages, Team, and Notifications */}
+      <AnimatePresence>
+        {activeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveModal(null)}
+              className="fixed inset-0 bg-black backdrop-blur-md cursor-pointer"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-[#1a1a1e] border border-white/20 dark:border-white/10 rounded-[28px] w-full max-w-5xl h-[80vh] shadow-2xl z-50 relative flex flex-col overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-[#E7E7EC] dark:border-[#323238] flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/10">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#111111] dark:bg-white animate-pulse" />
+                  <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                    {activeModal === "messages" && "Interactive Messenger"}
+                    {activeModal === "team" && "Team Directory Workspace"}
+                    {activeModal === "notifications" && "Notification Feed Center"}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="h-8 w-8 rounded-xl bg-accent hover:bg-accent/80 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-hidden p-6">
+                <ShellContext.Provider value={{ isInsideModal: true }}>
+                  <Suspense fallback={
+                    <div className="h-full flex flex-col items-center justify-center space-y-3">
+                      <div className="w-6 h-6 border-2 border-t-transparent border-[#111111] dark:border-white rounded-full animate-spin" />
+                      <p className="text-xs font-semibold text-muted-foreground animate-pulse">Initializing modular workspace view...</p>
+                    </div>
+                  }>
+                    {activeModal === "messages" && <MessagesPage />}
+                    {activeModal === "team" && <TeamPage />}
+                    {activeModal === "notifications" && <NotificationsPage />}
+                  </Suspense>
+                </ShellContext.Provider>
+              </div>
             </motion.div>
           </div>
         )}

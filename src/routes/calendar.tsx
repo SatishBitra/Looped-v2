@@ -621,7 +621,10 @@ function CalendarPage() {
             {/* TIMELINE FILTERS POPUP DROPDOWN */}
             <div className="relative" ref={filterRef}>
               <button
-                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                onClick={() => {
+                  setIsFilterDropdownOpen(!isFilterDropdownOpen);
+                  setIsProjectDropdownOpen(false);
+                }}
                 className={`h-9 px-3.5 rounded-xl border text-[12px] font-semibold flex items-center gap-1.5 transition-all ${
                   isFilterDropdownOpen
                     ? "bg-[#5A82E8] text-white border-[#5A82E8]"
@@ -639,7 +642,7 @@ function CalendarPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
-                    className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-4 shadow-xl z-50 space-y-3"
+                    className="absolute left-0 mt-2 w-56 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-4 shadow-xl z-50 space-y-3"
                   >
                     <div className="flex items-center justify-between border-b pb-2">
                       <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -708,7 +711,10 @@ function CalendarPage() {
             {/* MY ACTIVE PROJECTS SELECTOR DROPDOWN */}
             <div className="relative" ref={projectRef}>
               <button
-                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                onClick={() => {
+                  setIsProjectDropdownOpen(!isProjectDropdownOpen);
+                  setIsFilterDropdownOpen(false);
+                }}
                 className="h-9 px-3.5 rounded-xl border border-border/70 bg-white dark:bg-[#1f1f23] text-[12px] font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-[#242428] transition-all"
               >
                 <Folder className="w-3.5 h-3.5 text-[#5A82E8]" />
@@ -722,7 +728,7 @@ function CalendarPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
-                    className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-1.5 shadow-xl z-50 space-y-0.5"
+                    className="absolute left-0 mt-2 w-52 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-1.5 shadow-xl z-50 space-y-0.5"
                   >
                     <p className="text-[9px] font-semibold text-muted-foreground p-2 uppercase tracking-wider border-b mb-1">
                       Select project scope
@@ -860,40 +866,6 @@ function CalendarPage() {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           {/* MAIN CALENDAR PANEL (COL-SPAN-9 - EXPANDED SPACE) */}
           <div className="xl:col-span-9 space-y-6">
-            {/* SEARCH AND DAY NAVIGATOR */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/50 dark:bg-[#162135]/30 p-2.5 rounded-2xl border border-border/40">
-              <div className="relative w-full sm:flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A8A8]" />
-                <input
-                  type="text"
-                  placeholder="Search events, tasks or logs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-9 pl-10 pr-4 bg-white dark:bg-[#1f1f23] border border-border/50 rounded-xl text-[12px] focus:outline-none"
-                />
-              </div>
-
-              {/* Weekly Slider navigator */}
-              <div className="flex bg-slate-100 dark:bg-[#1c1c20] p-1 rounded-xl w-full sm:w-auto overflow-x-auto justify-between">
-                {weekDays.map((d) => (
-                  <button
-                    key={d.date}
-                    onClick={() => {
-                      setSelectedDate(d.date);
-                      toast.info(`Selected date: ${d.date}`);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex flex-col items-center min-w-[44px] transition-all ${
-                      selectedDate === d.date
-                        ? "bg-white dark:bg-[#111111] text-[#5A82E8] shadow-sm scale-105"
-                        : "text-[#757575] hover:text-[#111111] dark:hover:text-white"
-                    }`}
-                  >
-                    <span className="text-[10px] uppercase font-medium opacity-75">{d.name}</span>
-                    <span className="text-sm mt-0.5">{d.num}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* DAY VIEW: ADVANCED HOUR-BY-HOUR STACKED SIDE-BY-SIDE TIMELINE */}
             {currentView === "day" && (
@@ -1224,6 +1196,48 @@ function CalendarPage() {
 
           {/* RIGHT ADAPTIVE PANEL (COL-SPAN-3 - DETAILS COLUMN) */}
           <div className="xl:col-span-3 space-y-6">
+            {/* SEARCH AND DAY NAVIGATOR (Moved & Stacked for Right Column) */}
+            <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-[24px] p-4.5 shadow-[var(--shadow-soft)] space-y-4">
+              <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Find & Navigate
+              </h4>
+              
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A8A8]" />
+                <input
+                  type="text"
+                  placeholder="Search events, tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-9 pl-9 pr-3 bg-slate-50 dark:bg-[#1f1f23] border border-border/50 rounded-xl text-[12px] focus:outline-none text-foreground"
+                />
+              </div>
+
+              {/* Weekly Slider navigator */}
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Select Date</p>
+                <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-[#1c1c20] rounded-xl">
+                  {weekDays.map((d) => (
+                    <button
+                      key={d.date}
+                      onClick={() => {
+                        setSelectedDate(d.date);
+                        toast.info(`Selected date: ${d.date}`);
+                      }}
+                      className={`py-1 rounded-lg text-xs font-semibold flex flex-col items-center justify-center min-w-[36px] transition-all cursor-pointer ${
+                        selectedDate === d.date
+                          ? "bg-white dark:bg-[#111111] text-[#5A82E8] shadow-sm scale-105 font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span className="text-[9px] uppercase font-medium opacity-75">{d.name.slice(0, 3)}</span>
+                      <span className="text-xs mt-0.5">{d.num}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Event Specific Drawer Card */}
             {selectedEvent ? (
               <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)] space-y-5">
@@ -1432,37 +1446,6 @@ function CalendarPage() {
                 </p>
               </div>
             )}
-
-            {/* UPCOMING CRITICAL DEADLINES */}
-            <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)]">
-              <h4 className="text-[11px] font-semibold text-[#757575] dark:text-[#A8A8A8] uppercase tracking-wider mb-3.5">
-                Upcoming Milestones
-              </h4>
-
-              <div className="space-y-3">
-                {events
-                  .filter((e) => e.type === "deadline")
-                  .slice(0, 3)
-                  .map((d) => (
-                    <div
-                      key={d.id}
-                      className="flex items-center justify-between p-3 bg-[#F4F4F7]/40 dark:bg-[#1c1c20]/40 rounded-xl border border-border/30"
-                    >
-                      <div>
-                        <p className="text-xs font-semibold text-[#111111] dark:text-white truncate max-w-[130px]">
-                          {d.title}
-                        </p>
-                        <span className="text-[10px] text-rose-500 font-semibold">
-                          {d.date === "2026-07-16" ? `Today, ${d.timeStart}` : d.date}
-                        </span>
-                      </div>
-                      <span className="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold uppercase">
-                        critical
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
