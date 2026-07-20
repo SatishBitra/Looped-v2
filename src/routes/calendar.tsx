@@ -550,7 +550,17 @@ function CalendarPage() {
       <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-[#E4664F]/8 dark:bg-[#E4664F]/4 blur-[120px] pointer-events-none z-0" />
 
       <div className="relative z-10 space-y-6">
-        {/* TOP COMPACT NAV BAR (No Employee Planner heading, fits capacity monitor + filters + projects dropdown) */}
+        {/* PAGE HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-[30px] font-semibold tracking-tight">Calendar</h1>
+            <p className="text-[14px] text-muted-foreground mt-1">
+              Weekly planner · Capacity allocation monitor
+            </p>
+          </div>
+        </div>
+
+        {/* TOP COMPACT NAV BAR (fits capacity monitor + filters + projects dropdown) */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/80 dark:bg-[#162135]/60 backdrop-blur-md p-4 px-5 rounded-3xl border border-white/60 dark:border-[#2a384e]/30 shadow-[var(--shadow-soft)]">
           {/* 1. HORIZONTAL CAPACITY MONITOR IN TOP NAV */}
           <div className="flex items-center gap-4 flex-wrap lg:flex-nowrap">
@@ -558,11 +568,11 @@ function CalendarPage() {
               <Activity className="w-4 h-4 text-[#5A82E8]" />
               <div className="text-left">
                 <div className="flex items-center gap-1.5 leading-none mb-0.5">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Capacity
                   </span>
                   <span
-                    className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-full ${
+                    className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
                       allocatedHoursToday > capacityTotal
                         ? "bg-[#E4664F]/10 text-[#E4664F]"
                         : allocatedHoursToday >= capacityTotal * 0.8
@@ -579,7 +589,7 @@ function CalendarPage() {
                 </div>
                 <p className="text-sm font-semibold text-[#111111] dark:text-white leading-none">
                   {allocatedHoursToday.toFixed(1)}{" "}
-                  <span className="text-[10px] font-normal text-muted-foreground">
+                  <span className="text-xs font-normal text-muted-foreground">
                     / {capacityTotal} hrs
                   </span>
                 </p>
@@ -600,7 +610,7 @@ function CalendarPage() {
                   style={{ width: `${capacityPercent}%` }}
                 />
               </div>
-              <p className="text-[9px] text-[#757575] dark:text-gray-400 font-medium tracking-tight text-right leading-none">
+              <p className="text-[11px] text-[#757575] dark:text-gray-400 font-medium tracking-tight text-right leading-none">
                 {capacityRemaining.toFixed(1)} hrs left
               </p>
             </div>
@@ -878,7 +888,7 @@ function CalendarPage() {
                         : "text-[#757575] hover:text-[#111111] dark:hover:text-white"
                     }`}
                   >
-                    <span className="text-[8px] uppercase font-medium opacity-75">{d.name}</span>
+                    <span className="text-[10px] uppercase font-medium opacity-75">{d.name}</span>
                     <span className="text-sm mt-0.5">{d.num}</span>
                   </button>
                 ))}
@@ -901,7 +911,7 @@ function CalendarPage() {
                         : `Selected: ${selectedDate}`}
                     </p>
                   </div>
-                  <span className="text-[11px] bg-[#5A82E8]/10 text-[#5A82E8] px-3 py-1 rounded-full font-semibold">
+                  <span className="text-xs bg-[#5A82E8]/10 text-[#5A82E8] px-3 py-1 rounded-full font-medium">
                     {filteredEvents.filter((e) => e.date === selectedDate).length} events allocated
                   </span>
                 </div>
@@ -917,10 +927,10 @@ function CalendarPage() {
                       <div key={hourStr} className="group/row flex items-start gap-4">
                         {/* Hour Indicator */}
                         <div className="w-20 pt-1 text-right flex flex-col justify-start">
-                          <span className="font-mono text-xs font-semibold text-[#111111] dark:text-gray-200">
+                          <span className="text-xs font-medium text-[#111111] dark:text-gray-200">
                             {hourStr}
                           </span>
-                          <span className="text-[9px] text-[#757575] font-semibold tracking-wider uppercase opacity-60">
+                          <span className="text-[10px] text-[#757575] font-medium tracking-wider uppercase opacity-60">
                             slot
                           </span>
                         </div>
@@ -1008,10 +1018,10 @@ function CalendarPage() {
                               : "bg-[#F4F4F7]/40 dark:bg-[#1c1c20]/40 text-muted-foreground hover:bg-slate-100"
                           }`}
                         >
-                          <span className="text-[10px] uppercase font-semibold tracking-wider">
+                          <span className="text-xs uppercase font-medium tracking-wider">
                             {day.name}
                           </span>
-                          <span className="text-lg font-semibold mt-0.5">{day.num}</span>
+                          <span className="text-lg font-medium mt-0.5">{day.num}</span>
                           {day.isToday && (
                             <span
                               className={`w-1.5 h-1.5 rounded-full ${isSel ? "bg-white" : "bg-[#5A82E8]"} mt-1`}
@@ -1059,7 +1069,7 @@ function CalendarPage() {
             {/* MONTH VIEW */}
             {currentView === "month" && (
               <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)]">
-                <div className="grid grid-cols-7 gap-1 text-center font-semibold text-xs text-[#757575] pb-3 mb-2 border-b border-border/40">
+                <div className="grid grid-cols-7 gap-1 text-center font-medium text-xs text-[#757575] pb-3 mb-2 border-b border-border/40">
                   <span>Mon</span>
                   <span>Tue</span>
                   <span>Wed</span>
@@ -1095,7 +1105,7 @@ function CalendarPage() {
                         }`}
                       >
                         <span
-                          className={`text-[10px] font-semibold ${isSelected ? "text-[#5A82E8]" : "text-muted-foreground"}`}
+                          className={`text-[11px] font-medium ${isSelected ? "text-[#5A82E8]" : "text-muted-foreground"}`}
                         >
                           {dayNum}
                         </span>
@@ -1106,7 +1116,7 @@ function CalendarPage() {
                             {dayEvts.slice(0, 2).map((e) => (
                               <div
                                 key={e.id}
-                                className={`text-[8px] truncate px-1 py-0.5 rounded-sm font-semibold ${
+                                className={`text-[10px] truncate px-1 py-0.5 rounded-sm font-medium ${
                                   e.type === "task"
                                     ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                                     : e.type === "meeting"
@@ -1118,7 +1128,7 @@ function CalendarPage() {
                               </div>
                             ))}
                             {dayEvts.length > 2 && (
-                              <div className="text-[7px] text-[#757575] font-semibold text-right">
+                              <div className="text-[9px] text-[#757575] font-medium text-right">
                                 +{dayEvts.length - 2} more
                               </div>
                             )}
@@ -1139,7 +1149,7 @@ function CalendarPage() {
                               />
                             ))}
                             {dayEvts.length > 3 && (
-                              <span className="text-[7px] text-muted-foreground font-semibold leading-none">
+                              <span className="text-[9px] text-muted-foreground font-medium leading-none">
                                 +
                               </span>
                             )}
@@ -1186,12 +1196,12 @@ function CalendarPage() {
                                 <span className="text-xs font-semibold text-[#111111] dark:text-white">
                                   {e.title}
                                 </span>
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-[11px] text-muted-foreground">
                                   {e.project} • {e.timeStart}
                                 </p>
                               </div>
                               <span
-                                className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-semibold ${
+                                className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-medium ${
                                   e.type === "task"
                                     ? "bg-blue-100 text-blue-700"
                                     : e.type === "meeting"
@@ -1221,7 +1231,7 @@ function CalendarPage() {
                 <div className="flex items-start justify-between border-b border-border/40 pb-3.5">
                   <div className="space-y-1">
                     <span
-                      className={`text-[9px] uppercase font-semibold px-2 py-0.5 rounded-full ${
+                      className={`text-[10px] uppercase font-medium px-2 py-0.5 rounded-full ${
                         selectedEvent.type === "task"
                           ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                           : selectedEvent.type === "meeting"
@@ -1236,7 +1246,7 @@ function CalendarPage() {
                     <h3 className="text-[15px] font-semibold text-[#111111] dark:text-white mt-1.5 leading-tight">
                       {selectedEvent.title}
                     </h3>
-                    <p className="text-[11px] font-medium text-[#757575] dark:text-slate-400">
+                    <p className="text-xs font-medium text-[#757575] dark:text-slate-400">
                       📂 Project scope: {selectedEvent.project}
                     </p>
                   </div>
@@ -1314,7 +1324,7 @@ function CalendarPage() {
                 {/* Description */}
                 {selectedEvent.description && (
                   <div className="bg-[#F4F4F7]/60 dark:bg-[#1c1c20]/60 p-3.5 rounded-2xl border border-border/30">
-                    <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    <h4 className="text-xs font-semibold text-[#757575] dark:text-gray-400 uppercase tracking-wider mb-1">
                       Briefing / Notes
                     </h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
@@ -1326,7 +1336,7 @@ function CalendarPage() {
                 {/* Checklist */}
                 {selectedEvent.checklist && (
                   <div className="space-y-2">
-                    <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <h4 className="text-xs font-semibold text-[#757575] dark:text-gray-400 uppercase tracking-wider">
                       Subtask progress
                     </h4>
                     <div className="space-y-1.5">
@@ -1490,7 +1500,7 @@ function CalendarPage() {
 
               <form onSubmit={handleCreateEvent} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                     EVENT TITLE
                   </label>
                   <input
@@ -1505,7 +1515,7 @@ function CalendarPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                       TYPE
                     </label>
                     <select
@@ -1523,7 +1533,7 @@ function CalendarPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                       PROJECT
                     </label>
                     <select
@@ -1542,7 +1552,7 @@ function CalendarPage() {
 
                 {newProject === "Other" && (
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                       CUSTOM PROJECT NAME
                     </label>
                     <input
@@ -1558,7 +1568,7 @@ function CalendarPage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                       DATE
                     </label>
                     <input
@@ -1567,11 +1577,11 @@ function CalendarPage() {
                       placeholder="YYYY-MM-DD"
                       value={newDate}
                       onChange={(e) => setNewDate(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-[11px] bg-transparent"
+                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                       START TIME
                     </label>
                     <input
@@ -1580,11 +1590,11 @@ function CalendarPage() {
                       placeholder="e.g. 09:00 AM"
                       value={newTimeStart}
                       onChange={(e) => setNewTimeStart(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-[11px] bg-transparent"
+                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                       END TIME
                     </label>
                     <input
@@ -1592,7 +1602,7 @@ function CalendarPage() {
                       placeholder="e.g. 10:30 AM"
                       value={newTimeEnd}
                       onChange={(e) => setNewTimeEnd(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-[11px] bg-transparent"
+                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
                     />
                   </div>
                 </div>
@@ -1600,7 +1610,7 @@ function CalendarPage() {
                 {newType === "task" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                         CAPACITY HOURS
                       </label>
                       <input
@@ -1612,7 +1622,7 @@ function CalendarPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                         PRIORITY
                       </label>
                       <select
@@ -1631,7 +1641,7 @@ function CalendarPage() {
                 {newType === "meeting" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                         LOCATION
                       </label>
                       <input
@@ -1643,7 +1653,7 @@ function CalendarPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                         PARTICIPANTS
                       </label>
                       <input
@@ -1658,7 +1668,7 @@ function CalendarPage() {
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
                     DESCRIPTION
                   </label>
                   <textarea
@@ -1864,16 +1874,16 @@ function EventCard({
       <div className="space-y-1.5 flex-1 pr-3">
         {/* Top meta tags */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[9px] font-semibold text-[#111111] dark:text-gray-300">
+          <span className="text-[11px] font-medium text-[#111111] dark:text-gray-300">
             {event.timeStart} {event.timeEnd ? ` - ${event.timeEnd}` : ""}
           </span>
-          <span className="text-[#A8A8A8] text-[8px]">•</span>
-          <span className={`text-[9px] font-semibold px-2 py-0.2 rounded-md border ${theme.tag}`}>
+          <span className="text-[#A8A8A8] text-[10px]">•</span>
+          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${theme.tag}`}>
             📂 {event.project}
           </span>
           {event.priority && (
             <span
-              className={`text-[8px] font-semibold px-1.5 py-0.2 rounded-md ${
+              className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
                 event.priority === "HIGH"
                   ? "bg-red-100 text-red-600 dark:bg-red-950/40"
                   : "bg-slate-100 text-slate-600 dark:bg-slate-800/40"
@@ -1891,7 +1901,7 @@ function EventCard({
 
         {/* Short description */}
         {event.description && (
-          <p className="text-[11px] text-[#757575] dark:text-gray-300 font-medium line-clamp-1 leading-normal">
+          <p className="text-[12px] text-[#757575] dark:text-gray-300 font-medium line-clamp-1 leading-normal">
             {event.description}
           </p>
         )}
@@ -1899,13 +1909,13 @@ function EventCard({
         {/* Bottom meta stats */}
         <div className="flex items-center gap-3 pt-0.5">
           {event.hours && (
-            <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground">
+            <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
               <Clock className="w-3 h-3 opacity-70" />
               <span>{event.hours} hrs allocated</span>
             </div>
           )}
           {event.participants && (
-            <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground">
+            <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
               <Users className="w-3 h-3 opacity-70" />
               <span>{event.participants.length} attending</span>
             </div>
@@ -1920,14 +1930,14 @@ function EventCard({
             e.stopPropagation();
             setShowShiftDropdown(!showShiftDropdown);
           }}
-          className="h-7 px-2.5 rounded-lg bg-white dark:bg-[#1a1a1e] border border-border/80 text-[10px] font-semibold hover:bg-slate-50 text-muted-foreground shadow-xs"
+          className="h-7 px-2.5 rounded-lg bg-white dark:bg-[#1a1a1e] border border-border/80 text-xs font-medium hover:bg-slate-50 text-muted-foreground shadow-xs"
         >
           Shift Time
         </button>
 
         {showShiftDropdown && (
           <div className="absolute right-0 bottom-full mb-1.5 bg-white dark:bg-[#1a1a1e] border border-border/80 shadow-xl rounded-xl p-1.5 z-50 w-32 space-y-1">
-            <p className="text-[9px] font-semibold text-center text-muted-foreground border-b pb-1 uppercase">
+            <p className="text-[10px] font-semibold text-center text-muted-foreground border-b pb-1 uppercase">
               Move slot:
             </p>
             {["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"].map((t) => (
@@ -1938,7 +1948,7 @@ function EventCard({
                   onShiftTime(t);
                   setShowShiftDropdown(false);
                 }}
-                className="w-full text-left p-1 px-1.5 text-[10px] font-semibold rounded hover:bg-slate-50 dark:hover:bg-white/5 text-[#111111] dark:text-white"
+                className="w-full text-left p-1 px-1.5 text-xs font-medium rounded hover:bg-slate-50 dark:hover:bg-white/5 text-[#111111] dark:text-white"
               >
                 {t}
               </button>
@@ -1992,18 +2002,18 @@ function MiniEventCard({
         e.stopPropagation();
         onClick();
       }}
-      className={`p-2 rounded-xl border text-[11px] leading-tight cursor-pointer transition-all ${styling} ${
+      className={`p-2 rounded-xl border text-xs leading-tight cursor-pointer transition-all ${styling} ${
         isSelected ? "ring-2 ring-[#5A82E8]/60 shadow-xs scale-102" : "hover:scale-[1.02]"
       }`}
     >
-      <div className="flex items-center justify-between font-mono text-[8px] opacity-75">
+      <div className="flex items-center justify-between text-[10px] font-medium opacity-75">
         <span>{event.timeStart}</span>
         {event.hours && <span>{event.hours}h</span>}
       </div>
-      <h5 className="font-semibold truncate mt-1 text-[#111111] dark:text-white text-[11px] tracking-tight">
+      <h5 className="font-semibold truncate mt-1 text-[#111111] dark:text-white text-[12px] tracking-tight">
         {event.title}
       </h5>
-      <p className="text-[9px] opacity-80 mt-0.5 font-medium truncate">{event.project}</p>
+      <p className="text-[10px] opacity-80 mt-0.5 font-medium truncate">{event.project}</p>
     </div>
   );
 }

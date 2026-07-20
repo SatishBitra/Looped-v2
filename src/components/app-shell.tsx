@@ -1588,7 +1588,7 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`bg-card border border-border rounded-[28px] shadow-[var(--shadow-soft)] ${className}`}
+      className={`bg-gradient-to-br from-white/60 via-white/40 to-white/10 dark:from-[#162135]/45 dark:via-[#162135]/25 dark:to-[#162135]/10 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-[28px] shadow-[var(--shadow-soft)] ${className}`}
     >
       {children}
     </div>
