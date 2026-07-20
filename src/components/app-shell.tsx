@@ -29,7 +29,15 @@ import {
   Send,
   ArrowLeft,
 } from "lucide-react";
-import { useState, useEffect, type ReactNode, createContext, useContext, lazy, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  type ReactNode,
+  createContext,
+  useContext,
+  lazy,
+  Suspense,
+} from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { notificationStore } from "@/lib/notifications-store";
@@ -37,9 +45,13 @@ import { NotificationDrawer } from "./notification-drawer";
 
 export const ShellContext = createContext({ isInsideModal: false });
 
-const MessagesPage = lazy(() => import("@/routes/messages").then(m => ({ default: m.MessagesPage })));
-const TeamPage = lazy(() => import("@/routes/team").then(m => ({ default: m.TeamPage })));
-const NotificationsPage = lazy(() => import("@/routes/notifications").then(m => ({ default: m.NotificationsPage })));
+const MessagesPage = lazy(() =>
+  import("@/routes/messages").then((m) => ({ default: m.MessagesPage })),
+);
+const TeamPage = lazy(() => import("@/routes/team").then((m) => ({ default: m.TeamPage })));
+const NotificationsPage = lazy(() =>
+  import("@/routes/notifications").then((m) => ({ default: m.NotificationsPage })),
+);
 
 const nav = [
   { to: "/home", icon: Home, label: "Home" },
@@ -1245,24 +1257,54 @@ function TopNav({
                       <div className="relative">
                         <button
                           onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                          className="flex items-center gap-1 px-2.5 py-1 bg-accent/60 dark:bg-accent/40 hover:bg-accent border border-border text-xs font-bold rounded-full transition-all"
+                          className="flex items-center gap-1.5 px-3 py-1 bg-surface dark:bg-[#242428] border border-border text-xs font-bold rounded-full hover:border-foreground/40 transition-all cursor-pointer shadow-sm text-foreground"
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT_COLORS[presenceStatus]}`}
+                            className={`w-2 h-2 rounded-full ${STATUS_DOT_COLORS[presenceStatus]}`}
                           />
-                          <span>Status</span>
+                          <span className="capitalize">{presenceStatus}</span>
                           <ChevronDown className="w-3 h-3 opacity-60" />
                         </button>
 
                         <AnimatePresence>
                           {isStatusDropdownOpen && (
                             <motion.div
-                              initial={{ opacity: 0, scale: 0.9, y: -5 }}
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.9, y: -5 }}
-                              className="absolute right-0 bottom-full mb-2 w-[140px] bg-white dark:bg-[#1c1c1f] border border-border rounded-xl shadow-lg z-[60] py-1"
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              className="absolute right-0 bottom-full mb-2 w-[220px] bg-white dark:bg-[#1c1c1f] border border-border rounded-xl shadow-2xl z-[60] py-1.5 p-1"
                             >
-                              {Object.keys(STATUS_DOT_COLORS).map((status) => (
+                              <div className="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/50 mb-1">
+                                Set active status
+                              </div>
+                              {[
+                                {
+                                  status: "Online",
+                                  desc: "Available & working",
+                                  color: "bg-[#33A579]",
+                                },
+                                {
+                                  status: "Busy",
+                                  desc: "DND • Mute alerts",
+                                  color: "bg-[#E4664F]",
+                                },
+                                {
+                                  status: "In Meeting",
+                                  desc: "In a huddle call",
+                                  color: "bg-[#F1C40F]",
+                                },
+                                {
+                                  status: "Focus Time",
+                                  desc: "Heads down mode",
+                                  color: "bg-[#9B59B6]",
+                                },
+                                { status: "Away", desc: "Away from desk", color: "bg-[#A8A8A8]" },
+                                {
+                                  status: "Offline",
+                                  desc: "Appear logged out",
+                                  color: "bg-[#7F8C8D]",
+                                },
+                              ].map(({ status, desc, color }) => (
                                 <button
                                   key={status}
                                   onClick={() => {
@@ -1270,17 +1312,26 @@ function TopNav({
                                     setIsStatusDropdownOpen(false);
                                     toast.success(`Status updated to ${status}`);
                                   }}
-                                  className="w-full text-left px-2.5 py-1.5 hover:bg-accent text-xs font-semibold flex items-center justify-between text-foreground"
+                                  className={`w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex flex-col gap-0.5 cursor-pointer ${
+                                    presenceStatus === status
+                                      ? "bg-slate-50 dark:bg-slate-800/60"
+                                      : ""
+                                  }`}
                                 >
-                                  <div className="flex items-center gap-1.5">
-                                    <span
-                                      className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT_COLORS[status]}`}
-                                    />
-                                    <span>{status}</span>
+                                  <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-2 h-2 rounded-full ${color}`} />
+                                      <span className="text-xs font-semibold text-foreground">
+                                        {status}
+                                      </span>
+                                    </div>
+                                    {presenceStatus === status && (
+                                      <Check className="w-3 h-3 text-foreground" strokeWidth={3} />
+                                    )}
                                   </div>
-                                  {presenceStatus === status && (
-                                    <Check className="w-3 h-3 text-[#5A82E8]" />
-                                  )}
+                                  <span className="text-[10px] text-muted-foreground pl-4">
+                                    {desc}
+                                  </span>
                                 </button>
                               ))}
                             </motion.div>
@@ -1316,7 +1367,9 @@ export function AppShell({
 }) {
   const { isInsideModal } = useContext(ShellContext);
 
-  const [activeModal, setActiveModal] = useState<"messages" | "team" | "notifications" | null>(null);
+  const [activeModal, setActiveModal] = useState<"messages" | "team" | "notifications" | null>(
+    null,
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isUniversalQuickAddOpen, setIsUniversalQuickAddOpen] = useState(false);
@@ -1341,11 +1394,7 @@ export function AppShell({
   }, []);
 
   if (isInsideModal) {
-    return (
-      <div className="w-full h-full overflow-y-auto pr-1">
-        {children}
-      </div>
-    );
+    return <div className="w-full h-full overflow-y-auto pr-1">{children}</div>;
   }
 
   return (
@@ -1629,12 +1678,16 @@ export function AppShell({
               {/* Modal Body */}
               <div className="flex-1 overflow-hidden p-6">
                 <ShellContext.Provider value={{ isInsideModal: true }}>
-                  <Suspense fallback={
-                    <div className="h-full flex flex-col items-center justify-center space-y-3">
-                      <div className="w-6 h-6 border-2 border-t-transparent border-[#111111] dark:border-white rounded-full animate-spin" />
-                      <p className="text-xs font-semibold text-muted-foreground animate-pulse">Initializing modular workspace view...</p>
-                    </div>
-                  }>
+                  <Suspense
+                    fallback={
+                      <div className="h-full flex flex-col items-center justify-center space-y-3">
+                        <div className="w-6 h-6 border-2 border-t-transparent border-[#111111] dark:border-white rounded-full animate-spin" />
+                        <p className="text-xs font-semibold text-muted-foreground animate-pulse">
+                          Initializing modular workspace view...
+                        </p>
+                      </div>
+                    }
+                  >
                     {activeModal === "messages" && <MessagesPage />}
                     {activeModal === "team" && <TeamPage />}
                     {activeModal === "notifications" && <NotificationsPage />}
@@ -1676,16 +1729,20 @@ export function StatusPill({
   children: ReactNode;
 }) {
   const map = {
-    blue: "bg-status-blue-bg text-status-blue",
-    green: "bg-status-green-bg text-status-green",
-    yellow: "bg-status-yellow-bg text-status-yellow",
-    orange: "bg-status-orange-bg text-status-orange",
-    red: "bg-status-red-bg text-status-red",
-    purple: "bg-status-purple-bg text-status-purple",
+    blue: "bg-blue-50 text-blue-700 border border-blue-200/60 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+    green:
+      "bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+    yellow:
+      "bg-amber-50 text-amber-700 border border-amber-200/60 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+    orange:
+      "bg-orange-50 text-orange-700 border border-orange-200/60 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20",
+    red: "bg-rose-50 text-rose-700 border border-rose-200/60 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
+    purple:
+      "bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
   } as const;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-medium ${map[tone]}`}
+      className={`inline-flex items-center gap-1.5 h-6.5 px-3 rounded-full text-[11px] font-semibold uppercase tracking-wider ${map[tone]}`}
     >
       {children}
     </span>

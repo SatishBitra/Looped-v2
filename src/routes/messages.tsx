@@ -73,9 +73,19 @@ const msgs = [
   },
 ];
 
-export function MessagesContent({ isModal = false, showChatOnMobile, setShowChatOnMobile }: { isModal?: boolean; showChatOnMobile: boolean; setShowChatOnMobile: (show: boolean) => void }) {
+export function MessagesContent({
+  isModal = false,
+  showChatOnMobile,
+  setShowChatOnMobile,
+}: {
+  isModal?: boolean;
+  showChatOnMobile: boolean;
+  setShowChatOnMobile: (show: boolean) => void;
+}) {
   return (
-    <div className={`flex md:grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-4 w-full ${isModal ? "h-[600px]" : "h-[calc(100vh-140px)]"}`}>
+    <div
+      className={`flex md:grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-4 w-full ${isModal ? "h-[600px]" : "h-[calc(100vh-140px)]"}`}
+    >
       {/* Thread list */}
       <Card
         className={`p-4 flex flex-col overflow-hidden w-full md:w-auto h-full ${showChatOnMobile ? "hidden md:flex" : "flex"}`}
@@ -100,9 +110,7 @@ export function MessagesContent({ isModal = false, showChatOnMobile, setShowChat
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-medium truncate">{t.name}</span>
-                  <span className="text-[11px] text-muted-foreground shrink-0 ml-2">
-                    {t.time}
-                  </span>
+                  <span className="text-[11px] text-muted-foreground shrink-0 ml-2">{t.time}</span>
                 </div>
                 <div className="text-[12px] text-muted-foreground truncate">{t.last}</div>
               </div>
@@ -200,7 +208,10 @@ export function MessagesPage() {
 
   return (
     <AppShell breadcrumb={["Workspace", "Messages"]}>
-      <MessagesContent showChatOnMobile={showChatOnMobile} setShowChatOnMobile={setShowChatOnMobile} />
+      <MessagesContent
+        showChatOnMobile={showChatOnMobile}
+        setShowChatOnMobile={setShowChatOnMobile}
+      />
     </AppShell>
   );
 }

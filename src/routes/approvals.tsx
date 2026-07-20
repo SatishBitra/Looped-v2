@@ -104,11 +104,11 @@ function ApprovalsPage() {
                 <button className="h-9 w-9 rounded-[14px] bg-surface grid place-items-center text-muted-foreground hover:text-foreground">
                   <MessageSquare className="w-4 h-4" strokeWidth={1.75} />
                 </button>
-                <button className="h-9 px-3.5 rounded-[14px] bg-status-red-bg text-status-red text-[12px] font-medium flex items-center gap-1.5">
-                  <X className="w-3.5 h-3.5" /> Reject
+                <button className="h-9 px-3.5 rounded-[14px] border border-rose-200 bg-rose-50/70 text-rose-700 hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-900/40 text-[12px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
+                  <X className="w-3.5 h-3.5" strokeWidth={2.5} /> Reject
                 </button>
-                <button className="h-9 px-3.5 rounded-[14px] bg-foreground text-background text-[12px] font-medium flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5" /> Approve
+                <button className="h-9 px-3.5 rounded-[14px] bg-foreground text-background text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer">
+                  <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> Approve
                 </button>
               </div>
             </div>

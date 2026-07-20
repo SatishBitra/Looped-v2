@@ -7,8 +7,8 @@ export const Route = createFileRoute("/reports")({
 });
 
 function ReportsPage() {
-  const weekly = [42, 51, 48, 60, 55, 38, 22];
-  const max = Math.max(...weekly);
+  const weekly = [8.5, 9.0, 8.0, 10.5, 8.2, 0.0, 0.0];
+  const max = 12;
 
   return (
     <AppShell breadcrumb={["Workspace", "Reports"]}>
@@ -45,19 +45,101 @@ function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <Card className="lg:col-span-2 p-5 sm:p-6">
-          <SectionTitle title="Weekly hours logged" />
-          <div className="h-56 flex items-end gap-2 sm:gap-4 pt-6 border-t border-border">
-            {weekly.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full rounded-t-[12px] bg-foreground/85"
-                  style={{ height: `${(h / max) * 100}%` }}
-                />
-                <div className="text-[11px] text-muted-foreground">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <SectionTitle title="Weekly Hours Logged" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 bg-foreground/80 rounded-xs" />
+                <span className="text-[11px] font-medium text-muted-foreground">Logged Hours</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-0.5 bg-rose-500 border-t border-dashed" />
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Min 8h Requirement
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+            {/* Analytics Summary */}
+            <div className="md:col-span-1 space-y-4 pr-0 md:pr-4 md:border-r border-border">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Total Hours
+                </p>
+                <h3 className="text-2xl font-bold text-foreground mt-0.5">44.2 hrs</h3>
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                  ✓ 100% Compliant
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Daily Avg (Workdays)
+                </p>
+                <h3 className="text-lg font-bold text-foreground mt-0.5">8.84 hrs</h3>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Policy Status
+                </p>
+                <div className="mt-1">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
+                    Min 8h Met
+                  </span>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Interactive Chart */}
+            <div className="md:col-span-3">
+              <div className="relative h-52 flex items-end gap-3 sm:gap-4 pt-8">
+                {/* 8 Hours Policy Line */}
+                <div
+                  className="absolute left-0 right-0 border-t border-dashed border-rose-500/60 z-10 flex items-center justify-end"
+                  style={{ bottom: `${(8 / 12) * 100}%` }}
+                >
+                  <span className="text-[9px] font-bold text-rose-500 bg-card px-1.5 py-0.5 rounded-md border border-rose-500/20 mr-1 translate-y-[-50%]">
+                    8.0h Min
+                  </span>
+                </div>
+
+                {weekly.map((h, i) => {
+                  const isWeekend = i >= 5;
+                  const meetsRequirement = isWeekend || h >= 8.0;
+                  return (
+                    <div
+                      key={i}
+                      className="flex-1 flex flex-col items-center gap-2 relative group z-20"
+                    >
+                      {/* Hours Label */}
+                      <span className="absolute -top-6 text-[10px] font-bold bg-[#111111] text-white dark:bg-white dark:text-[#111111] px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                        {h} hrs
+                      </span>
+                      <span className="text-[10px] font-semibold text-muted-foreground mb-1 group-hover:hidden">
+                        {h > 0 ? `${h}h` : "-"}
+                      </span>
+
+                      {/* Bar */}
+                      <div
+                        className={`w-full rounded-t-[8px] transition-all duration-300 ${
+                          h === 0
+                            ? "bg-muted/30 h-1"
+                            : !meetsRequirement
+                              ? "bg-rose-500/80 hover:bg-rose-500"
+                              : "bg-foreground/80 hover:bg-foreground"
+                        }`}
+                        style={{ height: h > 0 ? `${(h / 12) * 100}%` : "4px" }}
+                      />
+
+                      <div className="text-[11px] font-medium text-muted-foreground">
+                        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </Card>
 

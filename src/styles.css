@@ -170,6 +170,24 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    background-color: var(--surface);
+    color: var(--foreground);
+    border-color: var(--border);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted-foreground);
+    opacity: 0.75;
+  }
 }
 
 @utility soft-card {

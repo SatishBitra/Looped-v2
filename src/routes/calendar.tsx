@@ -156,22 +156,6 @@ function CalendarPage() {
   // Master events list
   const [events, setEvents] = useState<CalendarEvent[]>([
     {
-      id: "evt_1",
-      type: "meeting",
-      title: "UX Huddle Call",
-      project: "Helix Health",
-      timeStart: "09:00 AM",
-      timeEnd: "10:00 AM",
-      date: "2026-07-16",
-      participants: ["Sandy (You)", "Supraja", "Rahul", "Ivan"],
-      meetingLink: "https://meet.google.com/ux-huddle-loooped",
-      description:
-        "Review current design changes & feedback regarding client journey workflow bottlenecks.",
-      comments: [
-        { user: "Supraja", text: "Please bring current landing templates.", time: "8:30 AM" },
-      ],
-    },
-    {
       id: "evt_2",
       type: "task",
       title: "Standup Meeting & Board Triage",
@@ -554,69 +538,20 @@ function CalendarPage() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-[30px] font-semibold tracking-tight">Calendar</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              Weekly planner · Capacity allocation monitor
-            </p>
+            <p className="text-[14px] text-muted-foreground mt-1">Weekly planner & agenda</p>
           </div>
         </div>
 
-        {/* TOP COMPACT NAV BAR (fits capacity monitor + filters + projects dropdown) */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/80 dark:bg-[#162135]/60 backdrop-blur-md p-4 px-5 rounded-3xl border border-white/60 dark:border-[#2a384e]/30 shadow-[var(--shadow-soft)]">
-          {/* 1. HORIZONTAL CAPACITY MONITOR IN TOP NAV */}
-          <div className="flex items-center gap-4 flex-wrap lg:flex-nowrap">
-            <div className="flex items-center gap-2 bg-[#F4F4F7]/60 dark:bg-[#242428]/40 p-2 px-3.5 rounded-2xl border border-border/30">
-              <Activity className="w-4 h-4 text-[#5A82E8]" />
-              <div className="text-left">
-                <div className="flex items-center gap-1.5 leading-none mb-0.5">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Capacity
-                  </span>
-                  <span
-                    className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
-                      allocatedHoursToday > capacityTotal
-                        ? "bg-[#E4664F]/10 text-[#E4664F]"
-                        : allocatedHoursToday >= capacityTotal * 0.8
-                          ? "bg-[#E29A21]/10 text-[#E29A21]"
-                          : "bg-[#33A579]/10 text-[#33A579]"
-                    }`}
-                  >
-                    {allocatedHoursToday > capacityTotal
-                      ? "Full"
-                      : allocatedHoursToday >= capacityTotal * 0.8
-                        ? "Alert"
-                        : "OK"}
-                  </span>
-                </div>
-                <p className="text-sm font-semibold text-[#111111] dark:text-white leading-none">
-                  {allocatedHoursToday.toFixed(1)}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    / {capacityTotal} hrs
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            {/* Horizontal mini bar tracker */}
-            <div className="hidden sm:block w-[120px] space-y-1">
-              <div className="w-full bg-[#E7E7EC] dark:bg-[#323238] h-2 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    allocatedHoursToday > capacityTotal
-                      ? "bg-[#E4664F]"
-                      : allocatedHoursToday >= capacityTotal * 0.8
-                        ? "bg-[#E29A21]"
-                        : "bg-[#5A82E8]"
-                  }`}
-                  style={{ width: `${capacityPercent}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-[#757575] dark:text-gray-400 font-medium tracking-tight text-right leading-none">
-                {capacityRemaining.toFixed(1)} hrs left
-              </p>
-            </div>
+        {/* TOP COMPACT NAV BAR (fits filters + projects dropdown) */}
+        <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/80 dark:bg-[#162135]/60 backdrop-blur-md p-4 px-5 rounded-3xl border border-white/60 dark:border-[#2a384e]/30 shadow-[var(--shadow-soft)]">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[#5A82E8]" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Agenda Planner
+            </span>
           </div>
 
-          {/* 2. ACTIONS / CONTROLS (Filters, Projects dropdown, View selector, Add Event) */}
+          {/* ACTIONS / CONTROLS (Filters, Projects dropdown, View selector, Add Event) */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* TIMELINE FILTERS POPUP DROPDOWN */}
             <div className="relative" ref={filterRef}>
@@ -780,7 +715,7 @@ function CalendarPage() {
             {/* Create Trigger Button */}
             <button
               onClick={() => setIsAddEventOpen(true)}
-              className="h-9 px-4 rounded-xl bg-[#5A82E8] text-white text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              className="h-9 px-4 rounded-xl bg-foreground text-background text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} />
               Add Event
@@ -862,11 +797,10 @@ function CalendarPage() {
           )}
         </AnimatePresence>
 
-        {/* WORKSPACE MAIN LAYOUT GRID (Expanded: Calendar taking 9cols, details taking 3cols) */}
+        {/* WORKSPACE MAIN LAYOUT GRID (Expanded: Calendar taking 8cols, details taking 4cols) */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          {/* MAIN CALENDAR PANEL (COL-SPAN-9 - EXPANDED SPACE) */}
-          <div className="xl:col-span-9 space-y-6">
-
+          {/* MAIN CALENDAR PANEL (COL-SPAN-8 - EXPANDED SPACE) */}
+          <div className="xl:col-span-8 space-y-6">
             {/* DAY VIEW: ADVANCED HOUR-BY-HOUR STACKED SIDE-BY-SIDE TIMELINE */}
             {currentView === "day" && (
               <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-6 shadow-[var(--shadow-soft)] min-h-[550px]">
@@ -1194,14 +1128,14 @@ function CalendarPage() {
             )}
           </div>
 
-          {/* RIGHT ADAPTIVE PANEL (COL-SPAN-3 - DETAILS COLUMN) */}
-          <div className="xl:col-span-3 space-y-6">
+          {/* RIGHT ADAPTIVE PANEL (COL-SPAN-4 - DETAILS COLUMN) */}
+          <div className="xl:col-span-4 space-y-6">
             {/* SEARCH AND DAY NAVIGATOR (Moved & Stacked for Right Column) */}
             <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-[24px] p-4.5 shadow-[var(--shadow-soft)] space-y-4">
               <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Find & Navigate
               </h4>
-              
+
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A8A8]" />
                 <input
@@ -1215,7 +1149,9 @@ function CalendarPage() {
 
               {/* Weekly Slider navigator */}
               <div className="space-y-2">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Select Date</p>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Select Date
+                </p>
                 <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-[#1c1c20] rounded-xl">
                   {weekDays.map((d) => (
                     <button
@@ -1230,7 +1166,9 @@ function CalendarPage() {
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span className="text-[9px] uppercase font-medium opacity-75">{d.name.slice(0, 3)}</span>
+                      <span className="text-[9px] uppercase font-medium opacity-75">
+                        {d.name.slice(0, 3)}
+                      </span>
                       <span className="text-xs mt-0.5">{d.num}</span>
                     </button>
                   ))}
@@ -1673,7 +1611,7 @@ function CalendarPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 h-10 bg-[#5A82E8] text-white font-semibold rounded-xl text-xs shadow-md"
+                    className="flex-1 h-10 bg-foreground text-background font-semibold rounded-xl text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
                   >
                     Create Event
                   </button>
