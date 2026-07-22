@@ -172,7 +172,20 @@ function TopNav({
   );
   const [presenceStatus, setPresenceStatus] = useState<
     "Online" | "Busy" | "In Meeting" | "Focus Time" | "Away" | "Offline"
-  >("Online");
+  >(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("employee_presence_status");
+      if (saved) return saved as any;
+    }
+    return "Online";
+  });
+
+  const handleStatusChange = (
+    status: "Online" | "Busy" | "In Meeting" | "Focus Time" | "Away" | "Offline",
+  ) => {
+    setPresenceStatus(status);
+    localStorage.setItem("employee_presence_status", status);
+  };
 
   const [localNotifications, setLocalNotifications] = useState(
     notificationStore.getNotifications(),
@@ -1308,7 +1321,7 @@ function TopNav({
                                 <button
                                   key={status}
                                   onClick={() => {
-                                    setPresenceStatus(status as any);
+                                    handleStatusChange(status as any);
                                     setIsStatusDropdownOpen(false);
                                     toast.success(`Status updated to ${status}`);
                                   }}

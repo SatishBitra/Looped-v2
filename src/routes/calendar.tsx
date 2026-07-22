@@ -543,14 +543,7 @@ function CalendarPage() {
         </div>
 
         {/* TOP COMPACT NAV BAR (fits filters + projects dropdown) */}
-        <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/80 dark:bg-[#162135]/60 backdrop-blur-md p-4 px-5 rounded-3xl border border-white/60 dark:border-[#2a384e]/30 shadow-[var(--shadow-soft)]">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#5A82E8]" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Agenda Planner
-            </span>
-          </div>
-
+        <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-end gap-4 bg-white/80 dark:bg-[#162135]/60 backdrop-blur-md p-4 px-5 rounded-3xl border border-white/60 dark:border-[#2a384e]/30 shadow-[var(--shadow-soft)]">
           {/* ACTIONS / CONTROLS (Filters, Projects dropdown, View selector, Add Event) */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* TIMELINE FILTERS POPUP DROPDOWN */}
@@ -993,7 +986,7 @@ function CalendarPage() {
                     />
                   ))}
 
-                  {Array.from({ length: 14 }).map((_, i) => {
+                  {Array.from({ length: 31 }).map((_, i) => {
                     const dayNum = i + 1;
                     const paddedNum = dayNum.toString().padStart(2, "0");
                     const dateStr = `2026-07-${paddedNum}`;
