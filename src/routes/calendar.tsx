@@ -1140,31 +1140,78 @@ function CalendarPage() {
                 />
               </div>
 
-              {/* Weekly Slider navigator */}
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Select Date
-                </p>
-                <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-[#1c1c20] rounded-xl">
-                  {weekDays.map((d) => (
-                    <button
-                      key={d.date}
-                      onClick={() => {
-                        setSelectedDate(d.date);
-                        toast.info(`Selected date: ${d.date}`);
-                      }}
-                      className={`py-1 rounded-lg text-xs font-semibold flex flex-col items-center justify-center min-w-[36px] transition-all cursor-pointer ${
-                        selectedDate === d.date
-                          ? "bg-white dark:bg-[#111111] text-[#5A82E8] shadow-sm scale-105 font-bold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <span className="text-[9px] uppercase font-medium opacity-75">
-                        {d.name.slice(0, 3)}
+              {/* Expanded Month Calendar navigator */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <CalendarIcon className="w-3.5 h-3.5 text-[#5A82E8]" />
+                    <span>July 2026</span>
+                  </p>
+                  <span className="text-[10px] font-semibold text-[#5A82E8] bg-[#5A82E8]/10 px-2 py-0.5 rounded-full">
+                    {events.filter((e) => e.date.startsWith("2026-07")).length} events
+                  </span>
+                </div>
+
+                <div className="bg-slate-50/80 dark:bg-[#1a1a1e]/80 border border-border/60 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5">
+                  {/* Day of Week Header Row */}
+                  <div className="grid grid-cols-7 gap-1 text-center border-b border-border/40 pb-2 mb-1">
+                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayName) => (
+                      <span
+                        key={dayName}
+                        className="text-[10px] font-bold text-muted-foreground uppercase"
+                      >
+                        {dayName}
                       </span>
-                      <span className="text-xs mt-0.5">{d.num}</span>
-                    </button>
-                  ))}
+                    ))}
+                  </div>
+
+                  {/* 7-Column Dates Grid for Full Month */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Empty Slots for Wed 1st offset */}
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={`empty-${i}`} className="h-8" />
+                    ))}
+
+                    {/* July Days 1..31 */}
+                    {Array.from({ length: 31 }).map((_, i) => {
+                      const dayNum = i + 1;
+                      const paddedNum = dayNum.toString().padStart(2, "0");
+                      const dateStr = `2026-07-${paddedNum}`;
+                      const isSelected = selectedDate === dateStr;
+                      const isToday = dateStr === "2026-07-16";
+                      const dayEventCount = events.filter((e) => e.date === dateStr).length;
+
+                      return (
+                        <button
+                          key={dateStr}
+                          onClick={() => {
+                            setSelectedDate(dateStr);
+                            toast.info(
+                              `Selected date: July ${dayNum}, 2026 (${dayEventCount} items)`,
+                            );
+                          }}
+                          className={`relative h-8 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#5A82E8] text-white font-bold shadow-md scale-105"
+                              : isToday
+                                ? "bg-white dark:bg-[#25252a] text-[#5A82E8] border border-[#5A82E8]/50 font-bold"
+                                : "hover:bg-slate-200/60 dark:hover:bg-[#2a2a30] text-foreground"
+                          }`}
+                        >
+                          <span>{dayNum}</span>
+
+                          {/* Event indicator dot */}
+                          {dayEventCount > 0 && (
+                            <span
+                              className={`absolute bottom-1 w-1 h-1 rounded-full ${
+                                isSelected ? "bg-white" : "bg-[#5A82E8]"
+                              }`}
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1779,37 +1826,24 @@ function EventCard({
         e.stopPropagation();
         onClick();
       }}
-      className={`group/card relative p-3 px-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${theme.border} ${theme.bg} ${
+      className={`group/card relative p-3.5 px-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-start gap-3 ${theme.border} ${theme.bg} ${
         isSelected
           ? "ring-2 ring-[#5A82E8]/60 scale-[1.01] shadow-md bg-opacity-90"
           : "hover:scale-[1.005] hover:shadow-xs"
       }`}
     >
-      <div className="space-y-1.5 flex-1 pr-3">
-        {/* Top meta tags */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-medium text-[#111111] dark:text-gray-300">
+      {/* Left Column: Time, Title, Description, Meta Stats */}
+      <div className="space-y-1 flex-1 min-w-0 pr-1">
+        {/* Time display */}
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#111111] dark:text-gray-200">
+          <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span>
             {event.timeStart} {event.timeEnd ? ` - ${event.timeEnd}` : ""}
           </span>
-          <span className="text-[#A8A8A8] text-[10px]">•</span>
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${theme.tag}`}>
-            📂 {event.project}
-          </span>
-          {event.priority && (
-            <span
-              className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
-                event.priority === "HIGH"
-                  ? "bg-red-100 text-red-600 dark:bg-red-950/40"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800/40"
-              }`}
-            >
-              {event.priority}
-            </span>
-          )}
         </div>
 
         {/* Title */}
-        <h4 className="text-sm font-semibold text-[#111111] dark:text-white leading-tight tracking-tight">
+        <h4 className="text-[14px] font-semibold text-[#111111] dark:text-white leading-tight tracking-tight truncate">
           {event.title}
         </h4>
 
@@ -1821,54 +1855,89 @@ function EventCard({
         )}
 
         {/* Bottom meta stats */}
-        <div className="flex items-center gap-3 pt-0.5">
+        <div className="flex items-center gap-3 pt-1 flex-wrap text-[11px] font-medium text-muted-foreground">
           {event.hours && (
-            <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-              <Clock className="w-3 h-3 opacity-70" />
-              <span>{event.hours} hrs allocated</span>
+            <div className="flex items-center gap-1">
+              <Activity className="w-3 h-3 opacity-70" />
+              <span>{event.hours} hrs</span>
             </div>
           )}
           {event.participants && (
-            <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            <div className="flex items-center gap-1">
               <Users className="w-3 h-3 opacity-70" />
               <span>{event.participants.length} attending</span>
+            </div>
+          )}
+          {event.checklist && (
+            <div className="flex items-center gap-1 text-[#33A579]">
+              <CheckSquare className="w-3 h-3" />
+              <span>
+                {event.checklist.filter((c) => c.completed).length}/{event.checklist.length}{" "}
+                subtasks
+              </span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Quick Quick actions */}
-      <div className="flex items-center gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity relative">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowShiftDropdown(!showShiftDropdown);
-          }}
-          className="h-7 px-2.5 rounded-lg bg-white dark:bg-[#1a1a1e] border border-border/80 text-xs font-medium hover:bg-slate-50 text-muted-foreground shadow-xs"
+      {/* Right Column: Project Badge & Priority Badge + Shift Time Action */}
+      <div className="flex flex-col items-end gap-1.5 shrink-0 pl-1">
+        {/* Project Badge */}
+        <span
+          className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-lg border whitespace-nowrap shadow-2xs ${theme.tag}`}
         >
-          Shift Time
-        </button>
+          📂 {event.project}
+        </span>
 
-        {showShiftDropdown && (
-          <div className="absolute right-0 bottom-full mb-1.5 bg-white dark:bg-[#1a1a1e] border border-border/80 shadow-xl rounded-xl p-1.5 z-50 w-32 space-y-1">
-            <p className="text-[10px] font-semibold text-center text-muted-foreground border-b pb-1 uppercase">
-              Move slot:
-            </p>
-            {["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"].map((t) => (
-              <button
-                key={t}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShiftTime(t);
-                  setShowShiftDropdown(false);
-                }}
-                className="w-full text-left p-1 px-1.5 text-xs font-medium rounded hover:bg-slate-50 dark:hover:bg-white/5 text-[#111111] dark:text-white"
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+        {/* Priority Badge */}
+        {event.priority && (
+          <span
+            className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md whitespace-nowrap ${
+              event.priority === "HIGH"
+                ? "bg-red-100 text-red-600 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50"
+                : event.priority === "MEDIUM"
+                  ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900/50"
+                  : "bg-slate-100 text-slate-600 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800"
+            }`}
+          >
+            {event.priority}
+          </span>
         )}
+
+        {/* Shift Time Action */}
+        <div className="relative mt-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowShiftDropdown(!showShiftDropdown);
+            }}
+            className="h-6 px-2 rounded-md bg-white dark:bg-[#1a1a1e] border border-border/80 text-[10px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 text-muted-foreground shadow-2xs opacity-80 group-hover/card:opacity-100 transition-opacity cursor-pointer"
+          >
+            Shift Time
+          </button>
+
+          {showShiftDropdown && (
+            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-[#1a1a1e] border border-border/80 shadow-xl rounded-xl p-1.5 z-50 w-32 space-y-1">
+              <p className="text-[10px] font-semibold text-center text-muted-foreground border-b pb-1 uppercase">
+                Move slot:
+              </p>
+              {["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"].map((t) => (
+                <button
+                  key={t}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onShiftTime(t);
+                    setShowShiftDropdown(false);
+                    toast.success(`Rescheduled to ${t}`);
+                  }}
+                  className="w-full text-left px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-[11px] font-medium transition-colors cursor-pointer"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
