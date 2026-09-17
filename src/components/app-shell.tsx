@@ -33,6 +33,7 @@ import {
 import {
   useState,
   useEffect,
+  useMemo,
   type ReactNode,
   createContext,
   useContext,
@@ -334,9 +335,11 @@ function TopNav({
 
   // Merge any real incoming notifications that are not already present in the popover state
   useEffect(() => {
-    const existingIds = new Set(popoverNotifs.map((n) => n.id));
-    const newNotifs = localNotifications.filter((n) => !existingIds.has(n.id));
-    if (newNotifs.length > 0) {
+    setPopoverNotifs((prev) => {
+      const existingIds = new Set(prev.map((n) => n.id));
+      const newNotifs = localNotifications.filter((n) => !existingIds.has(n.id));
+      if (newNotifs.length === 0) return prev;
+
       const mapped = newNotifs.map((n) => ({
         id: n.id,
         senderName: n.sender?.name || "System",
@@ -349,8 +352,8 @@ function TopNav({
         status: n.status,
         tab: "inbox" as const,
       }));
-      setPopoverNotifs((prev) => [...mapped, ...prev]);
-    }
+      return [...mapped, ...prev];
+    });
   }, [localNotifications]);
 
   // Messages Popover State
@@ -449,16 +452,30 @@ function TopNav({
     setMessageInputValue("");
   };
 
-  const inboxUnreadCount = popoverNotifs.filter(
-    (n) => n.tab === "inbox" && n.status === "unread",
-  ).length;
+  const inboxUnreadCount = useMemo(() => {
+    const seen = new Set<string>();
+    return popoverNotifs.filter((n) => {
+      if (n.tab !== "inbox" || n.status !== "unread") return false;
+      if (seen.has(n.id)) return false;
+      seen.add(n.id);
+      return true;
+    }).length;
+  }, [popoverNotifs]);
   const generalUnreadCount = 18; // Fixed matching image
 
-  const filteredNotifs = popoverNotifs.filter((n) => n.tab === selectedNotifTab);
+  const filteredNotifs = useMemo(() => {
+    const seen = new Set<string>();
+    return popoverNotifs.filter((n) => {
+      if (n.tab !== selectedNotifTab) return false;
+      if (seen.has(n.id)) return false;
+      seen.add(n.id);
+      return true;
+    });
+  }, [popoverNotifs, selectedNotifTab]);
 
   const handleNotifItemClick = (id: string) => {
-    setPopoverNotifs(
-      popoverNotifs.map((n) => (n.id === id ? { ...n, status: "read" as const } : n)),
+    setPopoverNotifs((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, status: "read" as const } : n)),
     );
     // Sync to store if it matches
     if (localNotifications.some((n) => n.id === id)) {
@@ -468,7 +485,7 @@ function TopNav({
 
   const handleMarkAllRead = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setPopoverNotifs(popoverNotifs.map((n) => ({ ...n, status: "read" as const })));
+    setPopoverNotifs((prev) => prev.map((n) => ({ ...n, status: "read" as const })));
     notificationStore.markAllAsRead();
     toast.success("Inbox marked as read");
   };
@@ -552,20 +569,15 @@ function TopNav({
               <Calendar className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </Link>
 
-            {/* Messages Button & Popover container */}
+            {/* Messages Button (Navigates directly to full messenger page) */}
             <div className="relative">
               <button
                 id="messages-popover-trigger"
                 onClick={() => {
-                  setIsMessagesPopoverOpen(!isMessagesPopoverOpen);
-                  setIsNotifPopoverOpen(false);
-                  setIsProfilePopoverOpen(false);
+                  navigate({ to: "/messages" });
                 }}
-                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
-                  isMessagesPopoverOpen
-                    ? "text-[#111111] dark:text-white border-[#A8A8A8]"
-                    : "text-[#757575]"
-                }`}
+                className="h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center text-[#757575] hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative cursor-pointer"
+                title="Open Messenger"
               >
                 <MessageSquare className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 {threads.some((t) => t.unread > 0) && (
@@ -945,8 +957,8 @@ function TopNav({
                                   <button
                                     onClick={() => {
                                       toast.error("Declined request");
-                                      setPopoverNotifs(
-                                        popoverNotifs.map((item) =>
+                                      setPopoverNotifs((prev) =>
+                                        prev.map((item) =>
                                           item.id === n.id ? { ...item, hasActions: false } : item,
                                         ),
                                       );
@@ -958,8 +970,8 @@ function TopNav({
                                   <button
                                     onClick={() => {
                                       toast.success("Accepted request successfully!");
-                                      setPopoverNotifs(
-                                        popoverNotifs.map((item) =>
+                                      setPopoverNotifs((prev) =>
+                                        prev.map((item) =>
                                           item.id === n.id ? { ...item, hasActions: false } : item,
                                         ),
                                       );

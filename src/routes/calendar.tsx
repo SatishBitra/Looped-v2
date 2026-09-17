@@ -83,24 +83,39 @@ function formatYYYYMMDD(d: Date): string {
 }
 
 function CalendarPage() {
-  // Navigation Date state (Defaulting to January 2025 as in reference image)
-  const [currentYear, setCurrentYear] = useState(2025);
-  const [currentMonth, setCurrentMonth] = useState(0); // 0 = January
+  // Navigation Date state (Defaulting to September 17, 2026 with live update)
+  const [todayDate, setTodayDate] = useState(() => new Date());
+
+  // Live timer: re-checks current system date every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTodayDate(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayStr = useMemo(() => formatYYYYMMDD(todayDate), [todayDate]);
+
+  const [currentYear, setCurrentYear] = useState(() => todayDate.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => todayDate.getMonth()); // 8 = September
   const [activeTab, setActiveTab] = useState<CalendarScope>("All events");
   const [viewMode, setViewMode] = useState<CalendarViewMode>("Month view");
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isInlineSearchOpen, setIsInlineSearchOpen] = useState(false);
 
-  // Selected date for day view or quick addition (Default Jan 10, 2025)
-  const [selectedDate, setSelectedDate] = useState("2025-01-10");
+  // Selected date for day view or quick addition (Default today's date)
+  const [selectedDate, setSelectedDate] = useState(() => todayStr);
 
   // Events list with local storage backup
   const [events, setEvents] = useState<CalendarEventItem[]>(() => {
     try {
-      const saved = localStorage.getItem("looped_calendar_events_v2");
+      const saved = localStorage.getItem("looped_calendar_events_v2026");
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some((e: any) => e.date?.startsWith("2026-09"))) {
+          return parsed;
+        }
       }
     } catch {
       // ignore
@@ -110,7 +125,7 @@ function CalendarPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("looped_calendar_events_v2", JSON.stringify(events));
+      localStorage.setItem("looped_calendar_events_v2026", JSON.stringify(events));
     } catch {
       // ignore
     }
@@ -143,6 +158,7 @@ function CalendarPage() {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
+        setIsInlineSearchOpen(true);
         searchInputRef.current?.focus();
       }
     }
@@ -202,7 +218,7 @@ function CalendarPage() {
         dateStr,
         dayNumber: d,
         isCurrentMonth: false,
-        isToday: dateStr === "2025-01-10",
+        isToday: dateStr === todayStr,
       });
     }
 
@@ -214,7 +230,7 @@ function CalendarPage() {
         dateStr,
         dayNumber: d,
         isCurrentMonth: true,
-        isToday: dateStr === "2025-01-10", // Primary reference day from screenshot
+        isToday: dateStr === todayStr,
       });
     }
 
@@ -228,12 +244,12 @@ function CalendarPage() {
         dateStr,
         dayNumber: d,
         isCurrentMonth: false,
-        isToday: dateStr === "2025-01-10",
+        isToday: dateStr === todayStr,
       });
     }
 
     return cells;
-  }, [currentYear, currentMonth]);
+  }, [currentYear, currentMonth, todayStr]);
 
   // Group events by date string YYYY-MM-DD
   const eventsByDate = useMemo(() => {
@@ -245,6 +261,42 @@ function CalendarPage() {
     }
     return map;
   }, [filteredEvents]);
+
+  // Week view dates calculation centered around selectedDate
+  const weekDays = useMemo(() => {
+    const base = new Date(selectedDate + "T12:00:00");
+    const dayOfWeek = (base.getDay() + 6) % 7; // Monday = 0
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - dayOfWeek);
+
+    return Array.from({ length: 7 }).map((_, idx) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + idx);
+      const dateStr = formatYYYYMMDD(d);
+      return {
+        dayName: DAYS_OF_WEEK[idx],
+        dayNum: d.getDate(),
+        dateStr,
+        isToday: dateStr === todayStr,
+      };
+    });
+  }, [selectedDate, todayStr]);
+
+  // Day view date calculation
+  const dayViewDate = useMemo(() => {
+    const d = new Date(selectedDate + "T12:00:00");
+    return {
+      dateStr: selectedDate,
+      dayNum: d.getDate(),
+      formatted: d.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+      isToday: selectedDate === todayStr,
+    };
+  }, [selectedDate, todayStr]);
 
   // Navigation handlers
   const handlePrevMonth = () => {
@@ -266,11 +318,15 @@ function CalendarPage() {
   };
 
   const handleGoToday = () => {
-    // Jump directly to Jan 2025 (as depicted in screenshot)
-    setCurrentYear(2025);
-    setCurrentMonth(0);
-    setSelectedDate("2025-01-10");
-    toast.info("Showing Today (January 10, 2025)");
+    const now = new Date();
+    setTodayDate(now);
+    setCurrentYear(now.getFullYear());
+    setCurrentMonth(now.getMonth());
+    const str = formatYYYYMMDD(now);
+    setSelectedDate(str);
+    toast.info(
+      `Showing Today (${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()})`,
+    );
   };
 
   // Event actions
@@ -310,67 +366,19 @@ function CalendarPage() {
   return (
     <AppShell>
       <div className="w-full max-w-[1400px] mx-auto space-y-6 pb-12">
-        {/* Top Header Section: Page Title, Search Bar & Scope Filter Pills */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                Calendar
-              </h1>
-            </div>
-
-            {/* Global Search Bar with ⌘K Badge */}
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search"
-                className="w-full h-10 pl-9 pr-12 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all shadow-xs"
-              />
-              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[#F4F4F7] dark:bg-[#1a1a1c] text-[10px] font-semibold text-muted-foreground border border-[#E7E7EC] dark:border-[#323238]">
-                ⌘K
-              </div>
-            </div>
-          </div>
-
-          {/* Filter Scope Pills: All events | Shared | Public | Archived */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {SCOPE_TABS.map((tab) => {
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    isActive
-                      ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
-                      : "bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#2c2c32]"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Main Calendar Card Container */}
         <div className="bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] sm:rounded-[32px] p-4 sm:p-7 shadow-[var(--shadow-soft)] overflow-hidden">
           {/* Card Top Toolbar */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-[#E7E7EC] dark:border-[#323238]">
             {/* Left: Date Badge + Month Title & Date Range */}
             <div className="flex items-center gap-3.5">
-              {/* Date Badge: JAN 10 */}
+              {/* Date Badge: SEP 17 (Live dynamic current date) */}
               <div className="w-12 h-12 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] flex flex-col items-center justify-center shrink-0 shadow-xs">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground leading-none">
-                  {MONTH_SHORT[currentMonth]}
+                  {MONTH_SHORT[todayDate.getMonth()]}
                 </span>
                 <span className="text-base font-extrabold text-foreground leading-none mt-1">
-                  10
+                  {todayDate.getDate()}
                 </span>
               </div>
 
@@ -379,9 +387,37 @@ function CalendarPage() {
                   <span>
                     {MONTH_NAMES[currentMonth]} {currentYear}
                   </span>
+                  {currentYear === todayDate.getFullYear() &&
+                    currentMonth === todayDate.getMonth() && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Live
+                      </span>
+                    )}
                 </h2>
                 <p className="text-xs text-muted-foreground font-medium mt-0.5">{rangeSubtitle}</p>
               </div>
+            </div>
+
+            {/* Middle: Scope Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar">
+              {SCOPE_TABS.map((tab) => {
+                const isActive = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
+                        : "bg-[#F4F4F7] dark:bg-[#1a1a1c] border border-[#E7E7EC] dark:border-[#323238] text-muted-foreground hover:text-foreground hover:bg-[#EAEAEF] dark:hover:bg-[#25252a]"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Right: Search, Date Nav ([ < ] [ Today ] [ > ]), View Dropdown, Add Event */}
@@ -650,16 +686,13 @@ function CalendarPage() {
           {viewMode === "Week view" && (
             <div className="mt-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-7 gap-3">
-                {DAYS_OF_WEEK.map((dayName, idx) => {
-                  // Let's compute dates for the active week around selectedDate (or Jan 6-12)
-                  const dayNum = 6 + idx;
-                  const dateStr = `2025-01-${String(dayNum).padStart(2, "0")}`;
-                  const dayEvents = eventsByDate.get(dateStr) || [];
-                  const isToday = dateStr === "2025-01-10";
+                {weekDays.map((dayInfo) => {
+                  const dayEvents = eventsByDate.get(dayInfo.dateStr) || [];
+                  const isToday = dayInfo.isToday;
 
                   return (
                     <div
-                      key={dayName}
+                      key={dayInfo.dayName}
                       className={`p-3.5 rounded-2xl border transition-colors flex flex-col min-h-[300px] ${
                         isToday
                           ? "bg-accent/40 border-foreground/30 shadow-xs"
@@ -669,13 +702,13 @@ function CalendarPage() {
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#E7E7EC] dark:border-[#323238]">
                         <div>
                           <p className="text-[11px] font-semibold text-muted-foreground uppercase">
-                            {dayName}
+                            {dayInfo.dayName}
                           </p>
-                          <p className="text-sm font-bold text-foreground">{dayNum}</p>
+                          <p className="text-sm font-bold text-foreground">{dayInfo.dayNum}</p>
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleOpenAddEvent(dateStr)}
+                          onClick={() => handleOpenAddEvent(dayInfo.dateStr)}
                           className="w-6 h-6 rounded-lg hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground"
                           title="Add event"
                         >
@@ -732,20 +765,25 @@ function CalendarPage() {
               <div className="flex items-center justify-between p-4 rounded-2xl bg-[#F4F4F7] dark:bg-[#1a1a1c] border border-[#E7E7EC] dark:border-[#323238]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-foreground text-background font-bold text-sm grid place-items-center">
-                    10
+                    {dayViewDate.dayNum}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">
-                      Friday, January 10, 2025
+                    <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                      <span>{dayViewDate.formatted}</span>
+                      {dayViewDate.isToday && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          Today
+                        </span>
+                      )}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      3 scheduled team meetings & milestone demos
+                      {(eventsByDate.get(selectedDate) || []).length} scheduled items
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleOpenAddEvent("2025-01-10")}
+                  onClick={() => handleOpenAddEvent(selectedDate)}
                   className="px-3.5 py-1.5 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -764,8 +802,9 @@ function CalendarPage() {
                   "02:00 PM",
                   "03:00 PM",
                   "04:00 PM",
+                  "05:00 PM",
                 ].map((hour) => {
-                  const dayEvents = (eventsByDate.get("2025-01-10") || []).filter((e) =>
+                  const dayEvents = (eventsByDate.get(selectedDate) || []).filter((e) =>
                     e.timeStart.startsWith(hour.split(":")[0]),
                   );
 

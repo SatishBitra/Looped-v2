@@ -1,7 +1,431 @@
 import { CalendarEventItem } from "./calendar-types";
 
 export const INITIAL_CALENDAR_EVENTS: CalendarEventItem[] = [
-  // Dec 30, 2024
+  // === SEPTEMBER 2026 (Live Current Month) ===
+  // Sep 1, 2026 (Tuesday)
+  {
+    id: "evt-sep1-1",
+    title: "Q3 Sprint Kickoff",
+    date: "2026-09-01",
+    timeStart: "9:00 AM",
+    timeEnd: "10:00 AM",
+    theme: "neutral",
+    scope: "all",
+    project: "Studio Operations",
+    description: "Setting cross-functional priorities and deliverable targets for September.",
+  },
+  {
+    id: "evt-sep1-2",
+    title: "Brand identity sync",
+    date: "2026-09-01",
+    timeStart: "2:00 PM",
+    timeEnd: "3:00 PM",
+    theme: "purple",
+    scope: "shared",
+    project: "Northwind",
+    participants: ["Sara D.", "Sandy K."],
+  },
+
+  // Sep 2, 2026 (Wednesday)
+  {
+    id: "evt-sep2-1",
+    title: "Motion boards v3",
+    date: "2026-09-02",
+    timeStart: "10:30 AM",
+    timeEnd: "11:30 AM",
+    theme: "blue",
+    scope: "shared",
+    project: "Kite Motors",
+  },
+  {
+    id: "evt-sep2-2",
+    title: "Design token review",
+    date: "2026-09-02",
+    timeStart: "3:00 PM",
+    timeEnd: "4:00 PM",
+    theme: "pink",
+    scope: "all",
+    project: "Design System",
+  },
+
+  // Sep 3, 2026 (Thursday)
+  {
+    id: "evt-sep3-1",
+    title: "Client status call",
+    date: "2026-09-03",
+    timeStart: "11:00 AM",
+    timeEnd: "11:45 AM",
+    theme: "orange",
+    scope: "shared",
+    project: "Meridian",
+    location: "Google Meet",
+  },
+
+  // Sep 4, 2026 (Friday)
+  {
+    id: "evt-sep4-1",
+    title: "Friday standup",
+    date: "2026-09-04",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+    project: "Studio Ops",
+  },
+  {
+    id: "evt-sep4-2",
+    title: "Demo & Drinks",
+    date: "2026-09-04",
+    timeStart: "4:30 PM",
+    timeEnd: "6:00 PM",
+    theme: "pink",
+    scope: "public",
+    location: "Studio Courtyard",
+  },
+
+  // Sep 7, 2026 (Monday)
+  {
+    id: "evt-sep7-1",
+    title: "Monday standup",
+    date: "2026-09-07",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep7-2",
+    title: "Product film cut",
+    date: "2026-09-07",
+    timeStart: "1:30 PM",
+    timeEnd: "2:45 PM",
+    theme: "blue",
+    scope: "shared",
+    project: "Kite Motors",
+  },
+
+  // Sep 8, 2026 (Tuesday)
+  {
+    id: "evt-sep8-1",
+    title: "Design Critique",
+    date: "2026-09-08",
+    timeStart: "10:00 AM",
+    timeEnd: "11:00 AM",
+    theme: "purple",
+    scope: "shared",
+    project: "Mobile App",
+  },
+
+  // Sep 9, 2026 (Wednesday)
+  {
+    id: "evt-sep9-1",
+    title: "Meridian presentation",
+    date: "2026-09-09",
+    timeStart: "2:00 PM",
+    timeEnd: "3:30 PM",
+    theme: "orange",
+    scope: "shared",
+    hasBullet: true,
+    project: "Meridian Print",
+  },
+
+  // Sep 10, 2026 (Thursday)
+  {
+    id: "evt-sep10-1",
+    title: "Sprint check-in",
+    date: "2026-09-10",
+    timeStart: "11:00 AM",
+    timeEnd: "11:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep10-2",
+    title: "1-on-1 with Clara",
+    date: "2026-09-10",
+    timeStart: "3:00 PM",
+    timeEnd: "3:45 PM",
+    theme: "pink",
+    scope: "shared",
+  },
+
+  // Sep 11, 2026 (Friday)
+  {
+    id: "evt-sep11-1",
+    title: "Friday standup",
+    date: "2026-09-11",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep11-2",
+    title: "Release candidate v2.4",
+    date: "2026-09-11",
+    timeStart: "2:00 PM",
+    timeEnd: "3:30 PM",
+    theme: "blue",
+    scope: "public",
+  },
+
+  // Sep 14, 2026 (Monday)
+  {
+    id: "evt-sep14-1",
+    title: "Monday standup",
+    date: "2026-09-14",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep14-2",
+    title: "Helix Health landing copy",
+    date: "2026-09-14",
+    timeStart: "11:30 AM",
+    timeEnd: "12:30 PM",
+    theme: "green",
+    scope: "shared",
+  },
+
+  // Sep 15, 2026 (Tuesday)
+  {
+    id: "evt-sep15-1",
+    title: "Design System sync",
+    date: "2026-09-15",
+    timeStart: "10:00 AM",
+    timeEnd: "11:00 AM",
+    theme: "purple",
+    scope: "shared",
+  },
+  {
+    id: "evt-sep15-2",
+    title: "Security audit",
+    date: "2026-09-15",
+    timeStart: "3:00 PM",
+    timeEnd: "4:00 PM",
+    theme: "neutral",
+    scope: "all",
+  },
+
+  // Sep 16, 2026 (Wednesday)
+  {
+    id: "evt-sep16-1",
+    title: "Northwind hero direction",
+    date: "2026-09-16",
+    timeStart: "11:00 AM",
+    timeEnd: "12:15 PM",
+    theme: "blue",
+    scope: "shared",
+  },
+  {
+    id: "evt-sep16-2",
+    title: "Coffee with Alina",
+    date: "2026-09-16",
+    timeStart: "2:30 PM",
+    timeEnd: "3:15 PM",
+    theme: "pink",
+    scope: "shared",
+    location: "Blue Bottle Coffee",
+  },
+
+  // Sep 17, 2026 (Thursday - TODAY)
+  {
+    id: "evt-sep17-1",
+    title: "Daily team standup",
+    date: "2026-09-17",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+    project: "Internal Ops",
+    meetingLink: "https://meet.google.com/loop-daily-sync",
+    participants: ["Sandy K.", "Marcus Vance", "Anna Rossi"],
+  },
+  {
+    id: "evt-sep17-2",
+    title: "Olivia x Riley — Q3 Sync",
+    date: "2026-09-17",
+    timeStart: "10:00 AM",
+    timeEnd: "11:00 AM",
+    theme: "purple",
+    scope: "shared",
+    project: "Brand Partnership",
+    description: "Collaboration scope and deliverable timeline signoff.",
+    participants: ["Olivia Hayes", "Riley Cooper", "Sandy K."],
+  },
+  {
+    id: "evt-sep17-3",
+    title: "Product demo & QA",
+    date: "2026-09-17",
+    timeStart: "1:30 PM",
+    timeEnd: "2:30 PM",
+    theme: "blue",
+    scope: "public",
+    project: "V2 Release",
+    description: "Demonstrating the new capacity dashboard to executive sponsors.",
+    meetingLink: "https://meet.google.com/v2-live-demo",
+  },
+  {
+    id: "evt-sep17-4",
+    title: "Design Critique & Tokens",
+    date: "2026-09-17",
+    timeStart: "3:30 PM",
+    timeEnd: "4:30 PM",
+    theme: "pink",
+    scope: "shared",
+    project: "Design Ops",
+    description: "Typography hierarchy and color tokens audit for dark mode.",
+  },
+  {
+    id: "evt-sep17-5",
+    title: "Sprint wrap-up",
+    date: "2026-09-17",
+    timeStart: "5:00 PM",
+    timeEnd: "5:45 PM",
+    theme: "orange",
+    scope: "all",
+    hasBullet: true,
+  },
+
+  // Sep 18, 2026 (Friday)
+  {
+    id: "evt-sep18-1",
+    title: "Friday standup",
+    date: "2026-09-18",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep18-2",
+    title: "Design system review",
+    date: "2026-09-18",
+    timeStart: "1:30 PM",
+    timeEnd: "2:45 PM",
+    theme: "blue",
+    scope: "shared",
+  },
+  {
+    id: "evt-sep18-3",
+    title: "Studio happy hour",
+    date: "2026-09-18",
+    timeStart: "5:00 PM",
+    timeEnd: "7:00 PM",
+    theme: "pink",
+    scope: "public",
+  },
+
+  // Sep 21, 2026 (Monday)
+  {
+    id: "evt-sep21-1",
+    title: "Monday standup",
+    date: "2026-09-21",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep21-2",
+    title: "Client onboarding — Apex",
+    date: "2026-09-21",
+    timeStart: "2:00 PM",
+    timeEnd: "3:15 PM",
+    theme: "purple",
+    scope: "shared",
+  },
+
+  // Sep 22, 2026 (Tuesday)
+  {
+    id: "evt-sep22-1",
+    title: "Prototype testing",
+    date: "2026-09-22",
+    timeStart: "10:30 AM",
+    timeEnd: "11:45 AM",
+    theme: "blue",
+    scope: "shared",
+  },
+
+  // Sep 23, 2026 (Wednesday)
+  {
+    id: "evt-sep23-1",
+    title: "Motion reel review",
+    date: "2026-09-23",
+    timeStart: "1:30 PM",
+    timeEnd: "2:30 PM",
+    theme: "orange",
+    scope: "all",
+  },
+
+  // Sep 24, 2026 (Thursday)
+  {
+    id: "evt-sep24-1",
+    title: "All-hands meeting",
+    date: "2026-09-24",
+    timeStart: "4:00 PM",
+    timeEnd: "5:00 PM",
+    theme: "neutral",
+    scope: "public",
+    meetingLink: "https://meet.google.com/loop-all-hands",
+  },
+
+  // Sep 25, 2026 (Friday)
+  {
+    id: "evt-sep25-1",
+    title: "Friday standup",
+    date: "2026-09-25",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+  {
+    id: "evt-sep25-2",
+    title: "Team lunch",
+    date: "2026-09-25",
+    timeStart: "12:30 PM",
+    timeEnd: "2:00 PM",
+    theme: "pink",
+    scope: "public",
+  },
+
+  // Sep 28, 2026 (Monday)
+  {
+    id: "evt-sep28-1",
+    title: "Monday standup",
+    date: "2026-09-28",
+    timeStart: "9:00 AM",
+    timeEnd: "9:30 AM",
+    theme: "neutral",
+    scope: "all",
+  },
+
+  // Sep 29, 2026 (Tuesday)
+  {
+    id: "evt-sep29-1",
+    title: "Q4 Planning session",
+    date: "2026-09-29",
+    timeStart: "2:00 PM",
+    timeEnd: "4:00 PM",
+    theme: "purple",
+    scope: "shared",
+  },
+
+  // Sep 30, 2026 (Wednesday)
+  {
+    id: "evt-sep30-1",
+    title: "End of month retro",
+    date: "2026-09-30",
+    timeStart: "4:00 PM",
+    timeEnd: "5:30 PM",
+    theme: "blue",
+    scope: "all",
+  },
+
+  // === HISTORIC EVENTS (Dec 2024 / Jan 2025) ===
   {
     id: "evt-dec30-1",
     title: "Monday standup",
