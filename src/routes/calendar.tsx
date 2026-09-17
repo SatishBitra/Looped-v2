@@ -1,2002 +1,924 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
+import { toast } from "sonner";
 import {
-  Calendar as CalendarIcon,
+  Search,
   ChevronLeft,
   ChevronRight,
   Plus,
-  Search,
-  Clock,
-  Users,
-  Play,
-  Pause,
-  Square,
-  CheckCircle2,
-  Check,
-  AlertTriangle,
-  Trash2,
-  Video,
-  MapPin,
-  ExternalLink,
-  Filter,
-  Folder,
   ChevronDown,
-  Award,
-  CheckSquare,
-  ShieldCheck,
-  Activity,
-  FileText,
-  User,
-  Info,
-  CalendarCheck2,
+  Clock,
+  MapPin,
+  Video,
+  Users,
+  Calendar as CalendarIcon,
+  Check,
+  CheckCircle2,
+  Filter,
+  ListFilter,
+  Eye,
+  CalendarDays,
+  Sparkles,
+  Layers,
 } from "lucide-react";
+import {
+  CalendarEventItem,
+  CalendarScope,
+  CalendarViewMode,
+  COLOR_THEME_STYLES,
+} from "@/components/calendar/calendar-types";
+import { INITIAL_CALENDAR_EVENTS } from "@/components/calendar/calendar-events-data";
+import { EventModal } from "@/components/calendar/event-modal";
+import { EventDetailModal } from "@/components/calendar/event-detail-modal";
+import { DayEventsModal } from "@/components/calendar/day-events-modal";
 
 export const Route = createFileRoute("/calendar")({
   component: CalendarPage,
 });
 
-// Event Data Types
-interface CalendarEvent {
-  id: string;
-  type:
-    "task" | "meeting" | "deadline" | "approval" | "time_log" | "leave" | "reminder" | "birthday";
-  title: string;
-  project: string;
-  timeStart: string; // e.g. "09:00 AM"
-  timeEnd?: string; // e.g. "10:30 AM"
-  date: string; // e.g. "2026-07-16"
-  priority?: "HIGH" | "MEDIUM" | "LOW";
-  status?: string;
-  hours?: number;
-  participants?: string[];
-  meetingLink?: string;
-  location?: string;
-  requestedBy?: string;
-  approvalStage?: string;
-  checklist?: { id: string; text: string; completed: boolean }[];
-  description?: string;
-  comments?: { user: string; text: string; time: string }[];
-}
+const SCOPE_TABS: CalendarScope[] = ["All events", "Shared", "Public", "Archived"];
 
-// 11 Core Working Hours for Timeline Slot Allocation
-const TIMELINE_HOURS = [
-  "08:00 AM",
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "01:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-  "04:00 PM",
-  "05:00 PM",
-  "06:00 PM",
+const VIEW_MODES: CalendarViewMode[] = ["Month view", "Week view", "Day view", "Agenda view"];
+
+const DAYS_OF_WEEK = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-// Hour Bucket matching helper
-function getHourBucket(timeStart: string): string {
-  const cleaned = timeStart.trim().toUpperCase();
-  const ampm = cleaned.includes("PM") ? "PM" : "AM";
+const MONTH_SHORT = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
 
-  const match = cleaned.match(/(\d+):(\d+)/);
-  if (!match) {
-    if (cleaned.includes("NOW")) return "02:00 PM";
-    return "09:00 AM";
-  }
-
-  let hour = parseInt(match[1], 10);
-  if (hour < 1 || hour > 12) hour = 9;
-
-  const formattedHour = hour.toString().padStart(2, "0");
-  return `${formattedHour}:00 ${ampm}`;
+// Helper to format YYYY-MM-DD
+function formatYYYYMMDD(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function CalendarPage() {
-  // Selected Day (Default is Thursday, 16 July 2026)
-  const [selectedDate, setSelectedDate] = useState("2026-07-16");
-  const [currentView, setCurrentView] = useState<"day" | "week" | "month" | "agenda">("day");
+  // Navigation Date state (Defaulting to January 2025 as in reference image)
+  const [currentYear, setCurrentYear] = useState(2025);
+  const [currentMonth, setCurrentMonth] = useState(0); // 0 = January
+  const [activeTab, setActiveTab] = useState<CalendarScope>("All events");
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("Month view");
+  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isInlineSearchOpen, setIsInlineSearchOpen] = useState(false);
 
-  // Dropdown States for Header
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+  // Selected date for day view or quick addition (Default Jan 10, 2025)
+  const [selectedDate, setSelectedDate] = useState("2025-01-10");
 
-  const filterRef = useRef<HTMLDivElement>(null);
-  const projectRef = useRef<HTMLDivElement>(null);
-
-  // Timer State
-  const [activeTimerTaskId, setActiveTimerTaskId] = useState<string | null>(null);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-
-  // Filters State
-  const [filters, setFilters] = useState({
-    task: true,
-    meeting: true,
-    deadline: true,
-    approval: true,
-    time_log: true,
-    leave: true,
-    reminder: true,
-    birthday: true,
+  // Events list with local storage backup
+  const [events, setEvents] = useState<CalendarEventItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("looped_calendar_events_v2");
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_CALENDAR_EVENTS;
   });
 
-  // Project Filter
-  const [projectFilter, setProjectFilter] = useState("All");
-
-  // Selected Event details
-  const [selectedEventId, setSelectedEventId] = useState<string | null>("evt_1");
-
-  // Dialog Controls
-  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  const [isWarningOpen, setIsWarningOpen] = useState(false);
-  const [pendingMoveEvent, setPendingMoveEvent] = useState<{
-    eventId: string;
-    newTime: string;
-    newDate: string;
-  } | null>(null);
-
-  // New Event Form State
-  const [newTitle, setNewTitle] = useState("");
-  const [newType, setNewType] = useState<CalendarEvent["type"]>("task");
-  const [newProject, setNewProject] = useState("Internal");
-  const [newCustomProject, setNewCustomProject] = useState("");
-  const [newDate, setNewDate] = useState("2026-07-16");
-  const [newTimeStart, setNewTimeStart] = useState("09:00 AM");
-  const [newTimeEnd, setNewTimeEnd] = useState("10:00 AM");
-  const [newPriority, setNewPriority] = useState<"HIGH" | "MEDIUM" | "LOW">("MEDIUM");
-  const [newHours, setNewHours] = useState(1.5);
-  const [newDescription, setNewDescription] = useState("");
-  const [newLocation, setNewLocation] = useState("");
-  const [newParticipants, setNewParticipants] = useState("");
-
-  // Master events list
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    {
-      id: "evt_2",
-      type: "task",
-      title: "Standup Meeting & Board Triage",
-      project: "Internal",
-      timeStart: "09:45 AM",
-      timeEnd: "10:45 AM",
-      date: "2026-07-16",
-      priority: "MEDIUM",
-      status: "On Track",
-      hours: 1.0,
-      description: "Standard morning pod check-in & priority alignment.",
-      checklist: [
-        { id: "c1", text: "Report project timesheet metrics", completed: true },
-        { id: "c2", text: "Coordinate designer handoff", completed: false },
-      ],
-    },
-    {
-      id: "evt_3",
-      type: "task",
-      title: "Design Sync — Website Revamp",
-      project: "ThreadSense AI",
-      timeStart: "10:00 AM",
-      timeEnd: "11:45 AM",
-      date: "2026-07-16",
-      priority: "HIGH",
-      status: "In Progress",
-      hours: 1.75,
-      description: "Update grid and align landing mockups to new corporate brand design rules.",
-    },
-    {
-      id: "evt_4",
-      type: "task",
-      title: "UX Audit Sync — Waveflow Studio",
-      project: "Helix Health",
-      timeStart: "11:00 AM",
-      timeEnd: "11:45 AM",
-      date: "2026-07-16",
-      priority: "LOW",
-      status: "Approved",
-      hours: 0.75,
-      description: "Approve waveflow system audits.",
-    },
-    {
-      id: "evt_5",
-      type: "approval",
-      title: "Homepage Layout Handoff Approval",
-      project: "Meridian",
-      timeStart: "11:30 AM",
-      timeEnd: "12:00 PM",
-      date: "2026-07-16",
-      requestedBy: "Rahul",
-      approvalStage: "V1 Sign-off",
-      description:
-        "Sandy needs to approve the Meridian homepage design system spec so it can progress to developer pod.",
-    },
-    {
-      id: "evt_6",
-      type: "task",
-      title: "Sprint Check-in — Tasklio",
-      project: "Aurora Coffee",
-      timeStart: "11:00 AM",
-      timeEnd: "12:00 PM",
-      date: "2026-07-16",
-      priority: "LOW",
-      status: "On Track",
-      hours: 1.0,
-      description: "Align Tasklio integration benchmarks.",
-    },
-    {
-      id: "evt_7",
-      type: "task",
-      title: "Design Review: Dark Mode UI",
-      project: "Kite Motors",
-      timeStart: "01:00 PM",
-      timeEnd: "02:15 PM",
-      date: "2026-07-16",
-      priority: "HIGH",
-      status: "In Progress",
-      hours: 1.25,
-      description:
-        "Refining contrast values and custom twilight mode setups for the buyer portal dashboard.",
-    },
-    {
-      id: "evt_8",
-      type: "deadline",
-      title: "Brand Style Guide Submission Due",
-      project: "Helix Health",
-      timeStart: "04:00 PM",
-      date: "2026-07-16",
-      description: "Critical client review milestone. High importance.",
-    },
-    {
-      id: "evt_9",
-      type: "meeting",
-      title: "Client Review Call — Waveflow",
-      project: "Meridian",
-      timeStart: "01:00 PM",
-      timeEnd: "02:00 PM",
-      date: "2026-07-16",
-      participants: ["Sandy", "Acme Representative", "Supraja"],
-      meetingLink: "https://meet.google.com/client-review-call",
-      description: "Gather feedback regarding newly implemented workspace features.",
-    },
-    {
-      id: "evt_10",
-      type: "time_log",
-      title: "Logged 2.0 hrs: Wireframe design",
-      project: "Helix Health",
-      timeStart: "02:30 PM",
-      timeEnd: "04:30 PM",
-      date: "2026-07-16",
-      hours: 2.0,
-    },
-    {
-      id: "evt_11",
-      type: "birthday",
-      title: "Ivan's Birthday! 🎂",
-      project: "Internal",
-      timeStart: "12:00 PM",
-      date: "2026-07-18",
-      description: "Celebrate Ivan's birthday at the lounge.",
-    },
-    {
-      id: "evt_12",
-      type: "leave",
-      title: "Marketing Team Retreat",
-      project: "Internal",
-      timeStart: "09:00 AM",
-      timeEnd: "05:00 PM",
-      date: "2026-07-17",
-      description: "Annual out-of-office team building exercise.",
-    },
-    {
-      id: "evt_13",
-      type: "reminder",
-      title: "Pre-read Meridian proposal docs",
-      project: "Meridian",
-      timeStart: "08:30 AM",
-      date: "2026-07-16",
-    },
-  ]);
-
-  // Click outside to close dropdowns
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setIsFilterDropdownOpen(false);
-      }
-      if (projectRef.current && !projectRef.current.contains(event.target as Node)) {
-        setIsProjectDropdownOpen(false);
+    try {
+      localStorage.setItem("looped_calendar_events_v2", JSON.stringify(events));
+    } catch {
+      // ignore
+    }
+  }, [events]);
+
+  // Modals state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEventItem | null>(null);
+  const [editEventData, setEditEventData] = useState<CalendarEventItem | null>(null);
+
+  // Day overflow modal state
+  const [overflowDate, setOverflowDate] = useState<string | null>(null);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const viewDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (viewDropdownRef.current && !viewDropdownRef.current.contains(e.target as Node)) {
+        setIsViewDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle active timer tracking
+  // Keyboard shortcut for search
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isTimerRunning && activeTimerTaskId) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev + 1);
-      }, 1000);
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
     }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, activeTimerTaskId]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
-  const activeTimerTask = useMemo(() => {
-    return events.find((e) => e.id === activeTimerTaskId);
-  }, [events, activeTimerTaskId]);
-
-  const formatTimerTime = (totalSecs: number) => {
-    const hrs = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Capacity calculations for Selected Day
-  const capacityTotal = 7;
-  const dayTasks = useMemo(() => {
-    return events.filter((e) => e.date === selectedDate && e.type === "task");
-  }, [events, selectedDate]);
-
-  const allocatedHoursToday = useMemo(() => {
-    return dayTasks.reduce((sum, item) => sum + (item.hours || 0), 0);
-  }, [dayTasks]);
-
-  const capacityRemaining = Math.max(0, capacityTotal - allocatedHoursToday);
-  const capacityPercent = Math.min(100, (allocatedHoursToday / capacityTotal) * 100);
-
-  // List of active project names
-  const projectsList = useMemo(() => {
-    const projs = new Set<string>();
-    events.forEach((e) => {
-      if (e.project) projs.add(e.project);
-    });
-    return ["All", ...Array.from(projs)];
-  }, [events]);
-
-  // Filtered Events based on sidebar config & search query
+  // Filter events based on active tab and search query
   const filteredEvents = useMemo(() => {
-    return events.filter((e) => {
-      if (!filters[e.type as keyof typeof filters]) return false;
-      if (projectFilter !== "All" && e.project !== projectFilter) return false;
-      if (searchQuery.trim() !== "") {
+    return events.filter((evt) => {
+      // Tab filter
+      if (activeTab === "Shared" && evt.scope !== "shared") return false;
+      if (activeTab === "Public" && evt.scope !== "public") return false;
+      if (activeTab === "Archived" && evt.scope !== "archived") return false;
+      if (activeTab === "All events" && evt.scope === "archived") return false;
+
+      // Search query
+      if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const matchesTitle = e.title.toLowerCase().includes(query);
-        const matchesProject = e.project.toLowerCase().includes(query);
-        const matchesDesc = e.description?.toLowerCase().includes(query) || false;
-        if (!matchesTitle && !matchesProject && !matchesDesc) return false;
+        const matchesTitle = evt.title.toLowerCase().includes(query);
+        const matchesDesc = evt.description?.toLowerCase().includes(query);
+        const matchesProject = evt.project?.toLowerCase().includes(query);
+        const matchesLocation = evt.location?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDesc && !matchesProject && !matchesLocation) {
+          return false;
+        }
       }
       return true;
     });
-  }, [events, filters, projectFilter, searchQuery]);
+  }, [events, activeTab, searchQuery]);
 
-  // Selected event object lookup
-  const selectedEvent = useMemo(() => {
-    return events.find((e) => e.id === selectedEventId) || null;
-  }, [events, selectedEventId]);
+  // Build Month Grid Data (Starting on Monday)
+  const calendarGrid = useMemo(() => {
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
 
-  // Shift Event timing action (simulates drag/drop timing change)
-  const shiftEventTime = (eventId: string, newTime: string, newDate: string) => {
-    const event = events.find((e) => e.id === eventId);
-    if (!event) return;
+    // In JS: Sunday is 0, Monday is 1, ..., Saturday is 6
+    // In our calendar: Monday is index 0, Sunday is index 6
+    const firstDayIndex = (firstDayOfMonth.getDay() + 6) % 7;
+    const daysInMonth = lastDayOfMonth.getDate();
 
-    if (event.type === "task" && event.hours) {
-      const targetDayTasks = events.filter(
-        (e) => e.date === newDate && e.type === "task" && e.id !== eventId,
-      );
-      const targetDayHours =
-        targetDayTasks.reduce((sum, item) => sum + (item.hours || 0), 0) + event.hours;
+    // Previous month filler days
+    const prevMonthLastDate = new Date(currentYear, currentMonth, 0).getDate();
+    const cells: {
+      dateStr: string;
+      dayNumber: number;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+    }[] = [];
 
-      if (targetDayHours > capacityTotal) {
-        setPendingMoveEvent({ eventId, newTime, newDate });
-        setIsWarningOpen(true);
-        return;
+    // 1. Previous month days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const d = prevMonthLastDate - i;
+      const prevDate = new Date(currentYear, currentMonth - 1, d);
+      const dateStr = formatYYYYMMDD(prevDate);
+      cells.push({
+        dateStr,
+        dayNumber: d,
+        isCurrentMonth: false,
+        isToday: dateStr === "2025-01-10",
+      });
+    }
+
+    // 2. Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const currentDate = new Date(currentYear, currentMonth, d);
+      const dateStr = formatYYYYMMDD(currentDate);
+      cells.push({
+        dateStr,
+        dayNumber: d,
+        isCurrentMonth: true,
+        isToday: dateStr === "2025-01-10", // Primary reference day from screenshot
+      });
+    }
+
+    // 3. Next month filler days to complete 35 or 42 grid cells
+    const totalCellsNeeded = cells.length > 35 ? 42 : 35;
+    const nextMonthDaysCount = totalCellsNeeded - cells.length;
+    for (let d = 1; d <= nextMonthDaysCount; d++) {
+      const nextDate = new Date(currentYear, currentMonth + 1, d);
+      const dateStr = formatYYYYMMDD(nextDate);
+      cells.push({
+        dateStr,
+        dayNumber: d,
+        isCurrentMonth: false,
+        isToday: dateStr === "2025-01-10",
+      });
+    }
+
+    return cells;
+  }, [currentYear, currentMonth]);
+
+  // Group events by date string YYYY-MM-DD
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEventItem[]>();
+    for (const evt of filteredEvents) {
+      const list = map.get(evt.date) || [];
+      list.push(evt);
+      map.set(evt.date, list);
+    }
+    return map;
+  }, [filteredEvents]);
+
+  // Navigation handlers
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear((y) => y - 1);
+    } else {
+      setCurrentMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear((y) => y + 1);
+    } else {
+      setCurrentMonth((m) => m + 1);
+    }
+  };
+
+  const handleGoToday = () => {
+    // Jump directly to Jan 2025 (as depicted in screenshot)
+    setCurrentYear(2025);
+    setCurrentMonth(0);
+    setSelectedDate("2025-01-10");
+    toast.info("Showing Today (January 10, 2025)");
+  };
+
+  // Event actions
+  const handleSaveEvent = (savedEvent: CalendarEventItem) => {
+    setEvents((prev) => {
+      const exists = prev.some((e) => e.id === savedEvent.id);
+      if (exists) {
+        return prev.map((e) => (e.id === savedEvent.id ? savedEvent : e));
       }
+      return [savedEvent, ...prev];
+    });
+    setEditEventData(null);
+  };
+
+  const handleDeleteEvent = (id: string) => {
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+    toast.success("Event deleted from calendar");
+  };
+
+  const handleOpenAddEvent = (targetDate?: string) => {
+    if (targetDate) {
+      setSelectedDate(targetDate);
     }
-
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id === eventId) {
-          toast.success(`Rescheduled "${e.title}" to ${newTime} on ${newDate}`);
-          return { ...e, timeStart: newTime, date: newDate };
-        }
-        return e;
-      }),
-    );
+    setEditEventData(null);
+    setIsAddModalOpen(true);
   };
 
-  const handleConfirmMoveAnyway = () => {
-    if (pendingMoveEvent) {
-      const { eventId, newTime, newDate } = pendingMoveEvent;
-      setEvents((prev) =>
-        prev.map((e) => {
-          if (e.id === eventId) {
-            toast.warning(`Rescheduled with capacity override: "${e.title}" to ${newTime}`);
-            return { ...e, timeStart: newTime, date: newDate };
-          }
-          return e;
-        }),
-      );
-    }
-    setIsWarningOpen(false);
-    setPendingMoveEvent(null);
+  const handleEditEvent = (evt: CalendarEventItem) => {
+    setEditEventData(evt);
+    setIsAddModalOpen(true);
   };
 
-  // Add event handler
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) {
-      toast.error("Please provide an event title");
-      return;
-    }
-
-    const finalProject =
-      newProject === "Other" ? newCustomProject.trim() || "Custom Project" : newProject;
-
-    const newEvt: CalendarEvent = {
-      id: "evt_" + Date.now(),
-      type: newType,
-      title: newTitle,
-      project: finalProject,
-      timeStart: newTimeStart,
-      timeEnd: newType === "deadline" || newType === "reminder" ? undefined : newTimeEnd,
-      date: newDate,
-      priority: newType === "task" ? newPriority : undefined,
-      status: newType === "task" ? "On Track" : undefined,
-      hours: newType === "task" || newType === "time_log" ? Number(newHours) || 1.0 : undefined,
-      description: newDescription,
-      location: newType === "meeting" ? newLocation : undefined,
-      participants:
-        newType === "meeting" && newParticipants
-          ? newParticipants.split(",").map((p) => p.trim())
-          : undefined,
-    };
-
-    if (newType === "task" && newEvt.hours) {
-      const targetDayTasks = events.filter((e) => e.date === newDate && e.type === "task");
-      const targetDayHours =
-        targetDayTasks.reduce((sum, item) => sum + (item.hours || 0), 0) + newEvt.hours;
-
-      if (targetDayHours > capacityTotal) {
-        setPendingMoveEvent({ eventId: newEvt.id, newTime: newTimeStart, newDate: newDate });
-        setEvents((prev) => [newEvt, ...prev]);
-        setIsWarningOpen(true);
-        toast.info("Task added but capacity warning triggered.");
-        resetForm();
-        setIsAddEventOpen(false);
-        return;
-      }
-    }
-
-    setEvents((prev) => [newEvt, ...prev]);
-    toast.success(`Event added successfully: ${newTitle}`);
-    resetForm();
-    setIsAddEventOpen(false);
-  };
-
-  const resetForm = () => {
-    setNewTitle("");
-    setNewType("task");
-    setNewProject("Internal");
-    setNewCustomProject("");
-    setNewDate("2026-07-16");
-    setNewTimeStart("09:00 AM");
-    setNewTimeEnd("10:00 AM");
-    setNewPriority("MEDIUM");
-    setNewHours(1.5);
-    setNewDescription("");
-    setNewLocation("");
-    setNewParticipants("");
-  };
-
-  const toggleChecklist = (eventId: string, itemId: string) => {
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id === eventId && e.checklist) {
-          const updatedCheck = e.checklist.map((item) =>
-            item.id === itemId ? { ...item, completed: !item.completed } : item,
-          );
-          return { ...e, checklist: updatedCheck };
-        }
-        return e;
-      }),
-    );
-  };
-
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    if (selectedEventId === eventId) {
-      setSelectedEventId(null);
-    }
-    toast.success("Event deleted from planner");
-  };
-
-  // Days of the active week
-  const weekDays = [
-    { name: "Mon", date: "2026-07-13", num: 13 },
-    { name: "Tue", date: "2026-07-14", num: 14 },
-    { name: "Wed", date: "2026-07-15", num: 15 },
-    { name: "Thu", date: "2026-07-16", num: 16, isToday: true },
-    { name: "Fri", date: "2026-07-17", num: 17 },
-    { name: "Sat", date: "2026-07-18", num: 18 },
-    { name: "Sun", date: "2026-07-19", num: 19 },
-  ];
-
-  // Count active filters
-  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+  // Range subtitle: e.g. "Jan 1, 2025 – Jan 31, 2025"
+  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const rangeSubtitle = `${MONTH_SHORT[currentMonth]} 1, ${currentYear} – ${MONTH_SHORT[currentMonth]} ${lastDayOfMonth}, ${currentYear}`;
 
   return (
-    <AppShell breadcrumb={["Planner", "My Calendar"]}>
-      {/* GLOW BACKGROUND EFFECT */}
-      <div className="absolute top-[10%] left-[40%] w-[450px] h-[450px] rounded-full bg-[#5A82E8]/12 dark:bg-[#5A82E8]/6 blur-[110px] pointer-events-none z-0" />
-      <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-[#E4664F]/8 dark:bg-[#E4664F]/4 blur-[120px] pointer-events-none z-0" />
+    <AppShell>
+      <div className="w-full max-w-[1400px] mx-auto space-y-6 pb-12">
+        {/* Top Header Section: Page Title, Search Bar & Scope Filter Pills */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Calendar
+              </h1>
+            </div>
 
-      <div className="relative z-10 space-y-6">
-        {/* PAGE HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-[30px] font-semibold tracking-tight">Calendar</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">Weekly planner & agenda</p>
+            {/* Global Search Bar with ⌘K Badge */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search"
+                className="w-full h-10 pl-9 pr-12 rounded-xl border border-border/80 bg-card/90 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all shadow-xs"
+              />
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-muted text-[10px] font-semibold text-muted-foreground border border-border/60">
+                ⌘K
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* TOP COMPACT NAV BAR (fits filters + projects dropdown) */}
-        <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-end gap-4 bg-white/80 dark:bg-[#162135]/60 backdrop-blur-md p-4 px-5 rounded-3xl border border-white/60 dark:border-[#2a384e]/30 shadow-[var(--shadow-soft)]">
-          {/* ACTIONS / CONTROLS (Filters, Projects dropdown, View selector, Add Event) */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* TIMELINE FILTERS POPUP DROPDOWN */}
-            <div className="relative" ref={filterRef}>
-              <button
-                onClick={() => {
-                  setIsFilterDropdownOpen(!isFilterDropdownOpen);
-                  setIsProjectDropdownOpen(false);
-                }}
-                className={`h-9 px-3.5 rounded-xl border text-[12px] font-semibold flex items-center gap-1.5 transition-all ${
-                  isFilterDropdownOpen
-                    ? "bg-[#5A82E8] text-white border-[#5A82E8]"
-                    : "bg-white dark:bg-[#1f1f23] text-gray-700 dark:text-gray-200 border-border/70 hover:bg-slate-50 dark:hover:bg-[#242428]"
-                }`}
-              >
-                <Filter className="w-3.5 h-3.5" />
-                <span>Filters ({activeFiltersCount})</span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </button>
-
-              <AnimatePresence>
-                {isFilterDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="absolute left-0 mt-2 w-56 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-4 shadow-xl z-50 space-y-3"
-                  >
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Show items
-                      </span>
-                      <button
-                        onClick={() => {
-                          const allOn = Object.values(filters).some((v) => !v);
-                          setFilters({
-                            task: allOn,
-                            meeting: allOn,
-                            deadline: allOn,
-                            approval: allOn,
-                            time_log: allOn,
-                            leave: allOn,
-                            reminder: allOn,
-                            birthday: allOn,
-                          });
-                        }}
-                        className="text-[10px] text-[#5A82E8] font-semibold hover:underline"
-                      >
-                        Toggle All
-                      </button>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      {[
-                        { key: "task", label: "Tasks", color: "bg-[#5A82E8]" },
-                        { key: "meeting", label: "Meetings", color: "bg-[#8A6CE0]" },
-                        { key: "approval", label: "Approvals", color: "bg-[#E29A21]" },
-                        { key: "deadline", label: "Deadlines", color: "bg-[#E4664F]" },
-                        { key: "time_log", label: "Time Logs", color: "bg-[#33A579]" },
-                        { key: "reminder", label: "Reminders", color: "bg-yellow-400" },
-                        { key: "leave", label: "Leave", color: "bg-gray-400" },
-                        { key: "birthday", label: "Birthdays", color: "bg-pink-400" },
-                      ].map((item) => (
-                        <label
-                          key={item.key}
-                          className="flex items-center justify-between cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${item.color}`} />
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-foreground">
-                              {item.label}
-                            </span>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={filters[item.key as keyof typeof filters]}
-                            onChange={() =>
-                              setFilters((prev) => ({
-                                ...prev,
-                                [item.key]: !prev[item.key as keyof typeof filters],
-                              }))
-                            }
-                            className="rounded border-gray-300 dark:border-gray-600 text-[#5A82E8] focus:ring-[#5A82E8] h-3.5 w-3.5"
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* MY ACTIVE PROJECTS SELECTOR DROPDOWN */}
-            <div className="relative" ref={projectRef}>
-              <button
-                onClick={() => {
-                  setIsProjectDropdownOpen(!isProjectDropdownOpen);
-                  setIsFilterDropdownOpen(false);
-                }}
-                className="h-9 px-3.5 rounded-xl border border-border/70 bg-white dark:bg-[#1f1f23] text-[12px] font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-[#242428] transition-all"
-              >
-                <Folder className="w-3.5 h-3.5 text-[#5A82E8]" />
-                <span>Project: {projectFilter === "All" ? "All Projects" : projectFilter}</span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </button>
-
-              <AnimatePresence>
-                {isProjectDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="absolute left-0 mt-2 w-52 bg-white dark:bg-[#1c1c20] border border-border/80 rounded-2xl p-1.5 shadow-xl z-50 space-y-0.5"
-                  >
-                    <p className="text-[9px] font-semibold text-muted-foreground p-2 uppercase tracking-wider border-b mb-1">
-                      Select project scope
-                    </p>
-                    {projectsList.map((proj) => (
-                      <button
-                        key={proj}
-                        onClick={() => {
-                          setProjectFilter(proj);
-                          setIsProjectDropdownOpen(false);
-                          toast.info(`Filtering view to project: ${proj}`);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                          projectFilter === proj
-                            ? "bg-[#5A82E8] text-white"
-                            : "text-[#555555] dark:text-[#D5E4F5] hover:bg-black/5 dark:hover:bg-white/5"
-                        }`}
-                      >
-                        {proj === "All" ? "📂 All Projects" : `📁 ${proj}`}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="h-4 w-px bg-border/60 mx-1.5" />
-
-            {/* View switching tabs */}
-            <div className="flex bg-[#F4F4F7] dark:bg-[#242428] rounded-xl p-1 border border-border/50">
-              {(["day", "week", "month", "agenda"] as const).map((v) => (
+          {/* Filter Scope Pills: All events | Shared | Public | Archived */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {SCOPE_TABS.map((tab) => {
+              const isActive = activeTab === tab;
+              return (
                 <button
-                  key={v}
-                  onClick={() => {
-                    setCurrentView(v);
-                    toast.info(`Switched planner to ${v} view`);
-                  }}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition-colors ${
-                    currentView === v
-                      ? "bg-white dark:bg-[#111111] text-[#5A82E8] shadow-xs"
-                      : "text-[#757575] hover:text-[#111111] dark:hover:text-white"
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-card text-foreground shadow-xs border border-border/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-card/50"
                   }`}
                 >
-                  {v}
+                  {tab}
                 </button>
-              ))}
-            </div>
-
-            {/* Create Trigger Button */}
-            <button
-              onClick={() => setIsAddEventOpen(true)}
-              className="h-9 px-4 rounded-xl bg-foreground text-background text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" strokeWidth={2.5} />
-              Add Event
-            </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* ACTIVE TIMER TRACKING CONTAINER */}
-        <AnimatePresence>
-          {activeTimerTaskId && activeTimerTask && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="flex items-center justify-between bg-gradient-to-r from-[#33A579] to-[#2e946c] text-white px-5 py-3 rounded-2xl shadow-md border border-[#33A579]/20">
-                <div className="flex items-center gap-3">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+        {/* Main Calendar Card Container */}
+        <div className="bg-card border border-border/80 rounded-[28px] sm:rounded-[32px] p-4 sm:p-7 shadow-xs overflow-hidden">
+          {/* Card Top Toolbar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-border/60">
+            {/* Left: Date Badge + Month Title & Date Range */}
+            <div className="flex items-center gap-3.5">
+              {/* Date Badge: JAN 10 */}
+              <div className="w-12 h-12 rounded-2xl border border-border/90 bg-muted/20 dark:bg-muted/10 flex flex-col items-center justify-center shrink-0 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground leading-none">
+                  {MONTH_SHORT[currentMonth]}
+                </span>
+                <span className="text-base font-extrabold text-foreground leading-none mt-1">
+                  10
+                </span>
+              </div>
+
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <span>
+                    {MONTH_NAMES[currentMonth]} {currentYear}
                   </span>
-                  <div>
-                    <p className="text-[10px] font-semibold opacity-80 uppercase tracking-widest">
-                      Active tracking logs
-                    </p>
-                    <p className="text-xs font-semibold">
-                      {activeTimerTask.title} — {activeTimerTask.project}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="font-mono font-semibold text-md tracking-widest bg-black/25 px-3 py-1 rounded-xl">
-                    {formatTimerTime(timerSeconds)}
-                  </div>
-                  <div className="flex items-center gap-1 bg-white/20 p-1 rounded-xl">
-                    <button
-                      onClick={() => setIsTimerRunning(!isTimerRunning)}
-                      className="p-1.5 hover:bg-white/10 rounded-lg"
-                      title={isTimerRunning ? "Pause" : "Play"}
-                    >
-                      {isTimerRunning ? (
-                        <Pause className="w-3.5 h-3.5" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsTimerRunning(false);
-                        const loggedHrs = (timerSeconds / 3600).toFixed(2);
-                        toast.success(
-                          `Logged ${loggedHrs} hrs on task "${activeTimerTask.title}"!`,
-                        );
-
-                        const newLog: CalendarEvent = {
-                          id: "evt_" + Date.now(),
-                          type: "time_log",
-                          title: `Recorded ${loggedHrs} hrs for work`,
-                          project: activeTimerTask.project,
-                          timeStart: "Now",
-                          date: selectedDate,
-                          hours: Number(loggedHrs),
-                        };
-                        setEvents((prev) => [newLog, ...prev]);
-                        setActiveTimerTaskId(null);
-                        setTimerSeconds(0);
-                      }}
-                      className="p-1.5 hover:bg-white/10 rounded-lg text-red-100"
-                      title="Stop & Log"
-                    >
-                      <Square className="w-3.5 h-3.5 fill-current" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* WORKSPACE MAIN LAYOUT GRID (Expanded: Calendar taking 8cols, details taking 4cols) */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          {/* MAIN CALENDAR PANEL (COL-SPAN-8 - EXPANDED SPACE) */}
-          <div className="xl:col-span-8 space-y-6">
-            {/* DAY VIEW: ADVANCED HOUR-BY-HOUR STACKED SIDE-BY-SIDE TIMELINE */}
-            {currentView === "day" && (
-              <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-6 shadow-[var(--shadow-soft)] min-h-[550px]">
-                {/* Header info */}
-                <div className="border-b border-border/40 pb-4 mb-6 flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <h3 className="text-md font-semibold text-[#111111] dark:text-white flex items-center gap-2">
-                      <CalendarCheck2 className="w-4 h-4 text-[#5A82E8]" />
-                      <span>Daily Chronological Timeline</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {selectedDate === "2026-07-16"
-                        ? "Thursday, 16 July 2026 (Active)"
-                        : `Selected: ${selectedDate}`}
-                    </p>
-                  </div>
-                  <span className="text-xs bg-[#5A82E8]/10 text-[#5A82E8] px-3 py-1 rounded-full font-medium">
-                    {filteredEvents.filter((e) => e.date === selectedDate).length} events allocated
-                  </span>
-                </div>
-
-                {/* Hour-by-Hour Timeline Slot Stack */}
-                <div className="space-y-4 max-h-[750px] overflow-y-auto pr-2">
-                  {TIMELINE_HOURS.map((hourStr) => {
-                    const matchedEvents = filteredEvents.filter(
-                      (e) => e.date === selectedDate && getHourBucket(e.timeStart) === hourStr,
-                    );
-
-                    return (
-                      <div key={hourStr} className="group/row flex items-start gap-4">
-                        {/* Hour Indicator */}
-                        <div className="w-20 pt-1 text-right flex flex-col justify-start">
-                          <span className="text-xs font-medium text-[#111111] dark:text-gray-200">
-                            {hourStr}
-                          </span>
-                          <span className="text-[10px] text-[#757575] font-medium tracking-wider uppercase opacity-60">
-                            slot
-                          </span>
-                        </div>
-
-                        {/* Event list stacked SIDE-BY-SIDE */}
-                        <div className="flex-1 min-h-[70px] relative border-l-2 border-dashed border-slate-200 dark:border-slate-800/80 pl-4 pb-2">
-                          {/* Grid alignment indicator rule on hover */}
-                          <div className="absolute top-4 left-0 right-0 h-px border-t border-dashed border-slate-100 dark:border-slate-800 opacity-0 group-hover/row:opacity-100 pointer-events-none transition-opacity" />
-
-                          {matchedEvents.length === 0 ? (
-                            <div className="text-[11px] text-muted-foreground/50 italic font-medium py-3">
-                              No scheduled priorities. Open time slot.
-                            </div>
-                          ) : (
-                            <div className="flex flex-col sm:flex-row gap-3 items-stretch w-full">
-                              {matchedEvents.map((evt) => (
-                                <div key={evt.id} className="flex-1 min-w-[200px]">
-                                  <EventCard
-                                    event={evt}
-                                    isSelected={selectedEventId === evt.id}
-                                    onClick={() => setSelectedEventId(evt.id)}
-                                    onShiftTime={(newTime) =>
-                                      shiftEventTime(evt.id, newTime, selectedDate)
-                                    }
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Catchall for events starting before/after the 8am-6pm core tracker */}
-                  {(() => {
-                    const nonTimelineEvents = filteredEvents.filter(
-                      (e) =>
-                        e.date === selectedDate &&
-                        !TIMELINE_HOURS.includes(getHourBucket(e.timeStart)),
-                    );
-                    if (nonTimelineEvents.length === 0) return null;
-                    return (
-                      <div className="pt-4 border-t border-dashed border-border/40">
-                        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                          Other Daily Reminders
-                        </h4>
-                        <div className="flex flex-col gap-2">
-                          {nonTimelineEvents.map((evt) => (
-                            <EventCard
-                              key={evt.id}
-                              event={evt}
-                              isSelected={selectedEventId === evt.id}
-                              onClick={() => setSelectedEventId(evt.id)}
-                              onShiftTime={(newTime) =>
-                                shiftEventTime(evt.id, newTime, selectedDate)
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
-
-            {/* WEEK VIEW */}
-            {currentView === "week" && (
-              <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)] overflow-x-auto">
-                <div className="min-w-[650px]">
-                  <div className="grid grid-cols-7 gap-2.5 border-b border-border/40 pb-3.5 mb-4">
-                    {weekDays.map((day) => {
-                      const isSel = selectedDate === day.date;
-                      return (
-                        <button
-                          key={day.date}
-                          onClick={() => {
-                            setSelectedDate(day.date);
-                            toast.info(`Date changed to ${day.date}`);
-                          }}
-                          className={`p-2.5 rounded-2xl flex flex-col items-center transition-all ${
-                            isSel
-                              ? "bg-[#5A82E8] text-white shadow-md scale-105"
-                              : "bg-[#F4F4F7]/40 dark:bg-[#1c1c20]/40 text-muted-foreground hover:bg-slate-100"
-                          }`}
-                        >
-                          <span className="text-xs uppercase font-medium tracking-wider">
-                            {day.name}
-                          </span>
-                          <span className="text-lg font-medium mt-0.5">{day.num}</span>
-                          {day.isToday && (
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${isSel ? "bg-white" : "bg-[#5A82E8]"} mt-1`}
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-2.5 items-start min-h-[400px]">
-                    {weekDays.map((day) => {
-                      const dayEvts = filteredEvents.filter((e) => e.date === day.date);
-                      return (
-                        <div
-                          key={day.date}
-                          className={`space-y-2.5 p-1 rounded-2xl min-h-[380px] transition-colors ${
-                            selectedDate === day.date
-                              ? "bg-[#5A82E8]/5 dark:bg-[#5A82E8]/2 border border-[#5A82E8]/10"
-                              : "bg-transparent"
-                          }`}
-                        >
-                          {dayEvts.length === 0 ? (
-                            <div className="text-center py-12 text-[10px] text-muted-foreground opacity-60">
-                              Free Day
-                            </div>
-                          ) : (
-                            dayEvts.map((evt) => (
-                              <MiniEventCard
-                                key={evt.id}
-                                event={evt}
-                                isSelected={selectedEventId === evt.id}
-                                onClick={() => setSelectedEventId(evt.id)}
-                              />
-                            ))
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* MONTH VIEW */}
-            {currentView === "month" && (
-              <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)]">
-                <div className="grid grid-cols-7 gap-1 text-center font-medium text-xs text-[#757575] pb-3 mb-2 border-b border-border/40">
-                  <span>Mon</span>
-                  <span>Tue</span>
-                  <span>Wed</span>
-                  <span>Thu</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                  <span>Sun</span>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 sm:gap-1.5 min-h-[220px] sm:min-h-[350px]">
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <div
-                      key={`offset-${i}`}
-                      className="p-1 sm:p-2 min-h-[40px] sm:min-h-[70px] bg-[#F4F4F7]/20 dark:bg-[#1c1c20]/20 opacity-30 rounded-lg sm:rounded-xl"
-                    />
-                  ))}
-
-                  {Array.from({ length: 31 }).map((_, i) => {
-                    const dayNum = i + 1;
-                    const paddedNum = dayNum.toString().padStart(2, "0");
-                    const dateStr = `2026-07-${paddedNum}`;
-                    const dayEvts = filteredEvents.filter((e) => e.date === dateStr);
-                    const isSelected = selectedDate === dateStr;
-
-                    return (
-                      <div
-                        key={dateStr}
-                        onClick={() => setSelectedDate(dateStr)}
-                        className={`p-1 sm:p-2 min-h-[50px] sm:min-h-[80px] rounded-lg sm:rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                          isSelected
-                            ? "border-[#5A82E8] bg-[#5A82E8]/5 shadow-xs"
-                            : "border-border/30 bg-white/30 dark:bg-[#242428]/20 hover:bg-black/[0.02]"
-                        }`}
-                      >
-                        <span
-                          className={`text-[11px] font-medium ${isSelected ? "text-[#5A82E8]" : "text-muted-foreground"}`}
-                        >
-                          {dayNum}
-                        </span>
-
-                        <div className="space-y-0.5 mt-1">
-                          {/* Desktop/Tablet view: show full text labeled pills */}
-                          <div className="hidden sm:block space-y-0.5">
-                            {dayEvts.slice(0, 2).map((e) => (
-                              <div
-                                key={e.id}
-                                className={`text-[10px] truncate px-1 py-0.5 rounded-sm font-medium ${
-                                  e.type === "task"
-                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                    : e.type === "meeting"
-                                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                                }`}
-                              >
-                                {e.title}
-                              </div>
-                            ))}
-                            {dayEvts.length > 2 && (
-                              <div className="text-[9px] text-[#757575] font-medium text-right">
-                                +{dayEvts.length - 2} more
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Mobile view: show compact colored dots to prevent clutter */}
-                          <div className="flex sm:hidden flex-wrap gap-0.5 justify-center mt-1">
-                            {dayEvts.slice(0, 3).map((e) => (
-                              <span
-                                key={e.id}
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  e.type === "task"
-                                    ? "bg-blue-500"
-                                    : e.type === "meeting"
-                                      ? "bg-purple-500"
-                                      : "bg-amber-500"
-                                }`}
-                              />
-                            ))}
-                            {dayEvts.length > 3 && (
-                              <span className="text-[9px] text-muted-foreground font-medium leading-none">
-                                +
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* AGENDA VIEW */}
-            {currentView === "agenda" && (
-              <div className="bg-gradient-to-br from-white/90 via-white/70 to-white/30 dark:from-[#162135]/65 dark:via-[#162135]/45 dark:to-[#162135]/20 backdrop-blur-[24px] border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)] max-h-[500px] overflow-y-auto">
-                <h3 className="text-md font-semibold text-[#111111] dark:text-white border-b border-border/40 pb-3 mb-4">
-                  Agenda Action Items
-                </h3>
-
-                <div className="space-y-5">
-                  {["2026-07-16", "2026-07-17", "2026-07-18"].map((date) => {
-                    const dayEvts = filteredEvents.filter((e) => e.date === date);
-                    if (dayEvts.length === 0) return null;
-                    return (
-                      <div key={date} className="space-y-2">
-                        <h4 className="text-xs font-semibold text-muted-foreground bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg">
-                          {date === "2026-07-16"
-                            ? "📅 Today (16 July)"
-                            : date === "2026-07-17"
-                              ? "📅 Tomorrow (17 July)"
-                              : `📅 Date: ${date}`}
-                        </h4>
-                        <div className="space-y-2 pl-1">
-                          {dayEvts.map((e) => (
-                            <div
-                              key={e.id}
-                              onClick={() => {
-                                setSelectedDate(date);
-                                setSelectedEventId(e.id);
-                              }}
-                              className="p-3 bg-white/50 dark:bg-[#162135]/30 rounded-xl border border-border/40 hover:border-[#5A82E8]/40 transition-all cursor-pointer flex justify-between items-center"
-                            >
-                              <div>
-                                <span className="text-xs font-semibold text-[#111111] dark:text-white">
-                                  {e.title}
-                                </span>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {e.project} • {e.timeStart}
-                                </p>
-                              </div>
-                              <span
-                                className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-medium ${
-                                  e.type === "task"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : e.type === "meeting"
-                                      ? "bg-purple-100 text-purple-700"
-                                      : "bg-amber-100 text-amber-700"
-                                }`}
-                              >
-                                {e.type}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT ADAPTIVE PANEL (COL-SPAN-4 - DETAILS COLUMN) */}
-          <div className="xl:col-span-4 space-y-6">
-            {/* SEARCH AND DAY NAVIGATOR (Moved & Stacked for Right Column) */}
-            <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-[24px] p-4.5 shadow-[var(--shadow-soft)] space-y-4">
-              <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Find & Navigate
-              </h4>
-
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A8A8]" />
-                <input
-                  type="text"
-                  placeholder="Search events, tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-9 pl-9 pr-3 bg-slate-50 dark:bg-[#1f1f23] border border-border/50 rounded-xl text-[12px] focus:outline-none text-foreground"
-                />
-              </div>
-
-              {/* Expanded Month Calendar navigator */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between px-1">
-                  <p className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <CalendarIcon className="w-3.5 h-3.5 text-[#5A82E8]" />
-                    <span>July 2026</span>
-                  </p>
-                  <span className="text-[10px] font-semibold text-[#5A82E8] bg-[#5A82E8]/10 px-2 py-0.5 rounded-full">
-                    {events.filter((e) => e.date.startsWith("2026-07")).length} events
-                  </span>
-                </div>
-
-                <div className="bg-slate-50/80 dark:bg-[#1a1a1e]/80 border border-border/60 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5">
-                  {/* Day of Week Header Row */}
-                  <div className="grid grid-cols-7 gap-1 text-center border-b border-border/40 pb-2 mb-1">
-                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayName) => (
-                      <span
-                        key={dayName}
-                        className="text-[10px] font-bold text-muted-foreground uppercase"
-                      >
-                        {dayName}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* 7-Column Dates Grid for Full Month */}
-                  <div className="grid grid-cols-7 gap-1">
-                    {/* Empty Slots for Wed 1st offset */}
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={`empty-${i}`} className="h-8" />
-                    ))}
-
-                    {/* July Days 1..31 */}
-                    {Array.from({ length: 31 }).map((_, i) => {
-                      const dayNum = i + 1;
-                      const paddedNum = dayNum.toString().padStart(2, "0");
-                      const dateStr = `2026-07-${paddedNum}`;
-                      const isSelected = selectedDate === dateStr;
-                      const isToday = dateStr === "2026-07-16";
-                      const dayEventCount = events.filter((e) => e.date === dateStr).length;
-
-                      return (
-                        <button
-                          key={dateStr}
-                          onClick={() => {
-                            setSelectedDate(dateStr);
-                            toast.info(
-                              `Selected date: July ${dayNum}, 2026 (${dayEventCount} items)`,
-                            );
-                          }}
-                          className={`relative h-8 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-[#5A82E8] text-white font-bold shadow-md scale-105"
-                              : isToday
-                                ? "bg-white dark:bg-[#25252a] text-[#5A82E8] border border-[#5A82E8]/50 font-bold"
-                                : "hover:bg-slate-200/60 dark:hover:bg-[#2a2a30] text-foreground"
-                          }`}
-                        >
-                          <span>{dayNum}</span>
-
-                          {/* Event indicator dot */}
-                          {dayEventCount > 0 && (
-                            <span
-                              className={`absolute bottom-1 w-1 h-1 rounded-full ${
-                                isSelected ? "bg-white" : "bg-[#5A82E8]"
-                              }`}
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                </h2>
+                <p className="text-xs text-muted-foreground font-medium mt-0.5">{rangeSubtitle}</p>
               </div>
             </div>
 
-            {/* Event Specific Drawer Card */}
-            {selectedEvent ? (
-              <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-5 shadow-[var(--shadow-soft)] space-y-5">
-                {/* Header info */}
-                <div className="flex items-start justify-between border-b border-border/40 pb-3.5">
-                  <div className="space-y-1">
-                    <span
-                      className={`text-[10px] uppercase font-medium px-2 py-0.5 rounded-full ${
-                        selectedEvent.type === "task"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                          : selectedEvent.type === "meeting"
-                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                            : selectedEvent.type === "approval"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                              : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
-                      }`}
-                    >
-                      {selectedEvent.type.replace("_", " ")}
-                    </span>
-                    <h3 className="text-[15px] font-semibold text-[#111111] dark:text-white mt-1.5 leading-tight">
-                      {selectedEvent.title}
-                    </h3>
-                    <p className="text-xs font-medium text-[#757575] dark:text-slate-400">
-                      📂 Project scope: {selectedEvent.project}
-                    </p>
-                  </div>
+            {/* Right: Search, Date Nav ([ < ] [ Today ] [ > ]), View Dropdown, Add Event */}
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+              {/* Quick Search Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsInlineSearchOpen(!isInlineSearchOpen);
+                  if (!isInlineSearchOpen) {
+                    setTimeout(() => searchInputRef.current?.focus(), 100);
+                  }
+                }}
+                className={`w-9 h-9 rounded-xl border border-border grid place-items-center transition-colors cursor-pointer ${
+                  isInlineSearchOpen || searchQuery
+                    ? "bg-foreground text-background"
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
+                }`}
+                title="Search events"
+              >
+                <Search className="w-4 h-4" />
+              </button>
 
-                  <button
-                    onClick={() => handleDeleteEvent(selectedEvent.id)}
-                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/25 text-red-500 rounded-lg transition-colors"
-                    title="Delete Event"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Info List */}
-                <div className="space-y-3 text-xs text-[#555555] dark:text-gray-300">
-                  <div className="flex items-center gap-2.5">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      Time: {selectedEvent.timeStart}{" "}
-                      {selectedEvent.timeEnd ? ` - ${selectedEvent.timeEnd}` : ""}
-                    </span>
-                  </div>
-
-                  {selectedEvent.hours && (
-                    <div className="flex items-center gap-2.5">
-                      <Activity className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        Allocated hours: {selectedEvent.hours} hrs
-                      </span>
-                    </div>
-                  )}
-
-                  {selectedEvent.priority && (
-                    <div className="flex items-center gap-2.5">
-                      <Award className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        Task Priority:{" "}
-                        <span
-                          className={`font-semibold uppercase ${
-                            selectedEvent.priority === "HIGH"
-                              ? "text-rose-500"
-                              : selectedEvent.priority === "MEDIUM"
-                                ? "text-indigo-500"
-                                : "text-slate-500"
-                          }`}
-                        >
-                          {selectedEvent.priority}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-
-                  {selectedEvent.location && (
-                    <div className="flex items-center gap-2.5">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">Location: {selectedEvent.location}</span>
-                    </div>
-                  )}
-
-                  {selectedEvent.meetingLink && (
-                    <div className="flex items-center gap-2.5">
-                      <Video className="w-4 h-4 text-muted-foreground" />
-                      <a
-                        href={selectedEvent.meetingLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#5A82E8] hover:underline flex items-center gap-1 font-semibold"
-                      >
-                        Join Meet Call <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  )}
-                </div>
-
-                {/* Description */}
-                {selectedEvent.description && (
-                  <div className="bg-[#F4F4F7]/60 dark:bg-[#1c1c20]/60 p-3.5 rounded-2xl border border-border/30">
-                    <h4 className="text-xs font-semibold text-[#757575] dark:text-gray-400 uppercase tracking-wider mb-1">
-                      Briefing / Notes
-                    </h4>
-                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
-                      {selectedEvent.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Checklist */}
-                {selectedEvent.checklist && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-semibold text-[#757575] dark:text-gray-400 uppercase tracking-wider">
-                      Subtask progress
-                    </h4>
-                    <div className="space-y-1.5">
-                      {selectedEvent.checklist.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => toggleChecklist(selectedEvent.id, item.id)}
-                          className="w-full flex items-center gap-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 p-1.5 rounded-lg transition-colors"
-                        >
-                          {item.completed ? (
-                            <CheckCircle2 className="w-4 h-4 text-[#33A579]" />
-                          ) : (
-                            <span className="w-4 h-4 rounded-full border border-gray-400 block" />
-                          )}
-                          <span
-                            className={`text-xs font-medium ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
-                          >
-                            {item.text}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Tracking Timer */}
-                {selectedEvent.type === "task" && (
-                  <div className="pt-2 border-t border-border/40">
-                    {activeTimerTaskId === selectedEvent.id ? (
-                      <button
-                        onClick={() => {
-                          setIsTimerRunning(false);
-                          setActiveTimerTaskId(null);
-                          setTimerSeconds(0);
-                        }}
-                        className="w-full h-10 rounded-xl bg-red-500 text-white font-semibold text-xs flex items-center justify-center gap-2"
-                      >
-                        <Square className="w-3.5 h-3.5 fill-current" /> Stop tracking log
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setActiveTimerTaskId(selectedEvent.id);
-                          setTimerSeconds(0);
-                          setIsTimerRunning(true);
-                          toast.success(`Timer started for task "${selectedEvent.title}"`);
-                        }}
-                        className="w-full h-10 rounded-xl bg-[#33A579] text-white font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[#2e946c] transition-colors shadow-sm"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-current" /> Start Focus Timer
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Approval actions */}
-                {selectedEvent.type === "approval" && (
-                  <div className="pt-2 border-t border-border/40 space-y-2">
-                    <div className="text-[10px] font-semibold text-muted-foreground flex justify-between">
-                      <span>By: {selectedEvent.requestedBy}</span>
-                      <span>{selectedEvent.approvalStage}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          toast.success("Design System spec approved!");
-                          setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
-                          setSelectedEventId(null);
-                        }}
-                        className="flex-1 h-9 bg-[#33A579] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5"
-                      >
-                        <Check className="w-4 h-4" /> Approve
-                      </button>
-                      <button
-                        onClick={() => {
-                          toast.error("Design handoff rejected with design logs");
-                        }}
-                        className="flex-1 h-9 bg-[#F4F4F7] dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-xs"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white/80 dark:bg-[#162135]/50 backdrop-blur-xl border border-white/60 dark:border-[#2a384e]/30 rounded-3xl p-6 shadow-[var(--shadow-soft)] text-center py-20 space-y-3">
-                <CalendarIcon className="w-10 h-10 text-muted-foreground/30 mx-auto" />
-                <p className="text-sm font-semibold text-muted-foreground">Select an item</p>
-                <p className="text-xs text-muted-foreground/80 max-w-[180px] mx-auto leading-normal">
-                  Select any task or meeting in the chronologically structured timeline to launch
-                  active trackers or view checklist logs.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* --- EVENT SCHEDULER MODAL --- */}
-      <AnimatePresence>
-        {isAddEventOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAddEventOpen(false)}
-              className="fixed inset-0 bg-black"
-            />
-
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#1c1c20] border border-border rounded-[24px] max-w-md w-full p-6 shadow-2xl z-10 relative space-y-4"
-            >
-              <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-md font-semibold text-[#111111] dark:text-white">
-                  Add New Calendar Event
-                </h3>
+              {/* Segmented Month Navigation: [ < ] [ Today ] [ > ] */}
+              <div className="flex items-center rounded-xl border border-border bg-card p-0.5 shadow-xs">
                 <button
                   type="button"
-                  onClick={() => setIsAddEventOpen(false)}
-                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-muted-foreground"
+                  onClick={handlePrevMonth}
+                  className="w-8 h-8 rounded-lg grid place-items-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                  title="Previous month"
                 >
-                  <Trash2 className="w-4 h-4 text-red-400" />
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoToday}
+                  className="px-3 h-8 rounded-lg text-xs font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="w-8 h-8 rounded-lg grid place-items-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                  title="Next month"
+                >
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateEvent} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                    EVENT TITLE
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Design review session, board handoff..."
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full h-10 px-3 border border-border rounded-xl text-xs focus:outline-none bg-transparent"
-                  />
-                </div>
+              {/* View Selector Dropdown: [ Month view ⌵ ] */}
+              <div className="relative" ref={viewDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
+                  className="h-9 px-3.5 rounded-xl border border-border bg-card hover:bg-accent text-xs font-semibold text-foreground flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                >
+                  <span>{viewMode}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                      TYPE
-                    </label>
-                    <select
-                      value={newType}
-                      onChange={(e) => setNewType(e.target.value as any)}
-                      className="w-full h-10 px-2 border border-border rounded-xl text-xs bg-transparent dark:bg-slate-800"
+                <AnimatePresence>
+                  {isViewDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                      className="absolute right-0 top-11 w-40 bg-card border border-border/90 rounded-2xl p-1.5 shadow-xl z-30"
                     >
-                      <option value="task">Task</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="approval">Approval</option>
-                      <option value="deadline">Deadline</option>
-                      <option value="reminder">Reminder</option>
-                      <option value="birthday">Birthday</option>
-                    </select>
-                  </div>
+                      {VIEW_MODES.map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => {
+                            setViewMode(mode);
+                            setIsViewDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-left transition-colors cursor-pointer ${
+                            viewMode === mode
+                              ? "bg-accent font-semibold text-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          <span>{mode}</span>
+                          {viewMode === mode && <Check className="w-3.5 h-3.5 text-foreground" />}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                      PROJECT
-                    </label>
-                    <select
-                      value={newProject}
-                      onChange={(e) => setNewProject(e.target.value)}
-                      className="w-full h-10 px-2 border border-border rounded-xl text-xs bg-transparent dark:bg-slate-800"
-                    >
-                      <option value="Internal">Internal</option>
-                      <option value="Helix Health">Helix Health</option>
-                      <option value="Meridian">Meridian</option>
-                      <option value="Aurora Coffee">Aurora Coffee</option>
-                      <option value="Other">Other...</option>
-                    </select>
-                  </div>
-                </div>
+              {/* Primary Action Button: + Add event */}
+              <button
+                type="button"
+                onClick={() => handleOpenAddEvent()}
+                className="h-9 px-4 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add event</span>
+              </button>
+            </div>
+          </div>
 
-                {newProject === "Other" && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                      CUSTOM PROJECT NAME
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Acme Inc, Taskflow project"
-                      value={newCustomProject}
-                      onChange={(e) => setNewCustomProject(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                      DATE
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="YYYY-MM-DD"
-                      value={newDate}
-                      onChange={(e) => setNewDate(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                      START TIME
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. 09:00 AM"
-                      value={newTimeStart}
-                      onChange={(e) => setNewTimeStart(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                      END TIME
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 10:30 AM"
-                      value={newTimeEnd}
-                      onChange={(e) => setNewTimeEnd(e.target.value)}
-                      className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                    />
-                  </div>
-                </div>
-
-                {newType === "task" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                        CAPACITY HOURS
-                      </label>
-                      <input
-                        type="number"
-                        step="0.25"
-                        value={newHours}
-                        onChange={(e) => setNewHours(Number(e.target.value))}
-                        className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                        PRIORITY
-                      </label>
-                      <select
-                        value={newPriority}
-                        onChange={(e) => setNewPriority(e.target.value as any)}
-                        className="w-full h-10 px-2 border border-border rounded-xl text-xs bg-transparent dark:bg-slate-800"
-                      >
-                        <option value="HIGH">HIGH</option>
-                        <option value="MEDIUM">MEDIUM</option>
-                        <option value="LOW">LOW</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {newType === "meeting" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                        LOCATION
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Google Meet, Room B"
-                        value={newLocation}
-                        onChange={(e) => setNewLocation(e.target.value)}
-                        className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                        PARTICIPANTS
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Supraja, Rahul"
-                        value={newParticipants}
-                        onChange={(e) => setNewParticipants(e.target.value)}
-                        className="w-full h-10 px-3 border border-border rounded-xl text-xs bg-transparent"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-[#757575] dark:text-gray-300 uppercase tracking-wider">
-                    DESCRIPTION
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Provide description or task specs..."
-                    value={newDescription}
-                    onChange={(e) => setNewDescription(e.target.value)}
-                    className="w-full p-3 border border-border rounded-xl text-xs focus:outline-none resize-none bg-transparent"
-                  />
-                </div>
-
-                <div className="flex gap-2.5 pt-2">
+          {/* Quick Inline Search Bar if activated */}
+          {isInlineSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="pt-4 pb-1"
+            >
+              <div className="flex items-center gap-2 p-2 rounded-2xl bg-muted/40 border border-border/80">
+                <Search className="w-4 h-4 text-muted-foreground ml-2 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter events by title, description, team, or location..."
+                  className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+                {searchQuery && (
                   <button
                     type="button"
-                    onClick={() => setIsAddEventOpen(false)}
-                    className="flex-1 h-10 bg-slate-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-xs"
+                    onClick={() => setSearchQuery("")}
+                    className="text-xs text-muted-foreground hover:text-foreground mr-2 font-medium"
                   >
-                    Cancel
+                    Clear
                   </button>
-                  <button
-                    type="submit"
-                    className="flex-1 h-10 bg-foreground text-background font-semibold rounded-xl text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
-                  >
-                    Create Event
-                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* VIEW: MONTH VIEW (Default - Identical to Screenshot) */}
+          {viewMode === "Month view" && (
+            <div className="mt-5">
+              {/* Responsive Container for Calendar Grid */}
+              <div className="w-full overflow-x-auto no-scrollbar">
+                <div className="min-w-[760px] lg:min-w-full">
+                  {/* Days of Week Header */}
+                  <div className="grid grid-cols-7 border-b border-border/60 pb-2.5">
+                    {DAYS_OF_WEEK.map((dayName) => (
+                      <div
+                        key={dayName}
+                        className="text-xs font-semibold text-muted-foreground/80 px-2 text-left"
+                      >
+                        {dayName}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar Month Grid Cells */}
+                  <div className="grid grid-cols-7 border-l border-t border-border/60">
+                    {calendarGrid.map((cell, idx) => {
+                      const dayEvents = eventsByDate.get(cell.dateStr) || [];
+                      const maxVisible = 3;
+                      const visibleEvents = dayEvents.slice(0, maxVisible);
+                      const overflowCount = dayEvents.length - maxVisible;
+
+                      return (
+                        <div
+                          key={cell.dateStr + "-" + idx}
+                          onClick={(e) => {
+                            // If clicked on cell background, prompt to add event
+                            if ((e.target as HTMLElement).tagName === "DIV") {
+                              setSelectedDate(cell.dateStr);
+                            }
+                          }}
+                          className={`min-h-[120px] lg:min-h-[135px] p-2 border-r border-b border-border/60 transition-colors flex flex-col justify-between group ${
+                            cell.isCurrentMonth
+                              ? "bg-card hover:bg-muted/15"
+                              : "bg-muted/10 text-muted-foreground/50"
+                          }`}
+                        >
+                          {/* Cell Header: Day Number */}
+                          <div className="flex items-center justify-between mb-1.5">
+                            {cell.isToday ? (
+                              <div className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center font-bold text-xs shadow-xs">
+                                {cell.dayNumber}
+                              </div>
+                            ) : (
+                              <span
+                                className={`text-xs font-medium pl-0.5 ${
+                                  cell.isCurrentMonth
+                                    ? "text-foreground"
+                                    : "text-muted-foreground/45"
+                                }`}
+                              >
+                                {cell.dayNumber}
+                              </span>
+                            )}
+
+                            {/* Hover Plus Button for instant event creation */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenAddEvent(cell.dateStr);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground grid place-items-center transition-opacity"
+                              title={`Add event on ${cell.dateStr}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          {/* Events Pills Container */}
+                          <div className="space-y-1 flex-1">
+                            {visibleEvents.map((evt) => {
+                              const style = COLOR_THEME_STYLES[evt.theme];
+                              return (
+                                <button
+                                  key={evt.id}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedEvent(evt);
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-1 px-2 py-1 rounded-lg text-left text-[11px] font-medium border transition-all cursor-pointer shadow-xs truncate ${
+                                    style.bg
+                                  } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
+                                  title={`${evt.title} (${evt.timeStart})`}
+                                >
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    {evt.hasBullet && (
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                          style.dotColor || "bg-current"
+                                        }`}
+                                      />
+                                    )}
+                                    <span className="truncate">{evt.title}</span>
+                                  </div>
+                                  <span className="text-[10px] opacity-75 shrink-0 font-normal">
+                                    {evt.timeStart}
+                                  </span>
+                                </button>
+                              );
+                            })}
+
+                            {/* Overflow count link (e.g. "2 more...", "3 more...") */}
+                            {overflowCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOverflowDate(cell.dateStr);
+                                }}
+                                className="text-[11px] font-medium text-muted-foreground hover:text-foreground pl-1 pt-0.5 text-left block transition-colors cursor-pointer"
+                              >
+                                {overflowCount} more...
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* --- CAPACITY LIMIT EXCEEDED WARNING DIALOG --- */}
-      <AnimatePresence>
-        {isWarningOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black"
-            />
-
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#1c1c20] border border-border rounded-[24px] max-w-sm w-full p-6 shadow-2xl z-10 relative text-center space-y-4"
-            >
-              <div className="w-12 h-12 rounded-full bg-[#E4664F]/10 text-[#E4664F] grid place-items-center mx-auto">
-                <AlertTriangle className="w-6 h-6" />
               </div>
+            </div>
+          )}
 
-              <div className="space-y-1.5">
-                <h3 className="text-md font-semibold text-[#111111] dark:text-white">
-                  Capacity Warning Triggered
-                </h3>
-                <p className="text-xs text-muted-foreground leading-normal font-medium">
-                  Saving this priority would exceed your daily allocated{" "}
-                  <strong>7 hour capacity</strong> for {selectedDate}. Reschedule other tasks to
-                  retain timeline efficiency.
-                </p>
+          {/* VIEW: WEEK VIEW */}
+          {viewMode === "Week view" && (
+            <div className="mt-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-7 gap-3">
+                {DAYS_OF_WEEK.map((dayName, idx) => {
+                  // Let's compute dates for the active week around selectedDate (or Jan 6-12)
+                  const dayNum = 6 + idx;
+                  const dateStr = `2025-01-${String(dayNum).padStart(2, "0")}`;
+                  const dayEvents = eventsByDate.get(dateStr) || [];
+                  const isToday = dateStr === "2025-01-10";
+
+                  return (
+                    <div
+                      key={dayName}
+                      className={`p-3.5 rounded-2xl border transition-colors flex flex-col min-h-[300px] ${
+                        isToday
+                          ? "bg-accent/40 border-foreground/30 shadow-xs"
+                          : "bg-card border-border/70"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/50">
+                        <div>
+                          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
+                            {dayName}
+                          </p>
+                          <p className="text-sm font-bold text-foreground">{dayNum}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddEvent(dateStr)}
+                          className="w-6 h-6 rounded-lg hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground"
+                          title="Add event"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 flex-1">
+                        {dayEvents.length === 0 ? (
+                          <p className="text-[11px] text-muted-foreground/60 italic pt-2">
+                            No events
+                          </p>
+                        ) : (
+                          dayEvents.map((evt) => {
+                            const style = COLOR_THEME_STYLES[evt.theme];
+                            return (
+                              <button
+                                key={evt.id}
+                                type="button"
+                                onClick={() => setSelectedEvent(evt)}
+                                className={`w-full p-2 rounded-xl text-left text-xs font-medium border transition-all ${
+                                  style.bg
+                                } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
+                              >
+                                <div className="flex items-center gap-1.5 truncate">
+                                  {evt.hasBullet && (
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        style.dotColor || "bg-current"
+                                      }`}
+                                    />
+                                  )}
+                                  <span className="font-semibold truncate">{evt.title}</span>
+                                </div>
+                                <div className="text-[10px] opacity-80 mt-1 flex items-center justify-between">
+                                  <span>{evt.timeStart}</span>
+                                  {evt.project && <span>{evt.project}</span>}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            </div>
+          )}
 
-              <div className="flex flex-col gap-2 pt-2">
+          {/* VIEW: DAY VIEW */}
+          {viewMode === "Day view" && (
+            <div className="mt-5 space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-foreground text-background font-bold text-sm grid place-items-center">
+                    10
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">
+                      Friday, January 10, 2025
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      3 scheduled team meetings & milestone demos
+                    </p>
+                  </div>
+                </div>
                 <button
-                  onClick={handleConfirmMoveAnyway}
-                  className="w-full h-10 bg-[#E4664F] text-white font-semibold rounded-xl text-xs"
+                  type="button"
+                  onClick={() => handleOpenAddEvent("2025-01-10")}
+                  className="px-3.5 py-1.5 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 flex items-center gap-1.5 cursor-pointer"
                 >
-                  Save Anyway (Force Override)
-                </button>
-                <button
-                  onClick={() => {
-                    setIsWarningOpen(false);
-                    setPendingMoveEvent(null);
-                  }}
-                  className="w-full h-10 bg-slate-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-xs"
-                >
-                  Change Event Timing
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Event</span>
                 </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+
+              {/* Timeline Schedule for Day */}
+              <div className="divide-y divide-border/60 border border-border/80 rounded-2xl overflow-hidden bg-card">
+                {[
+                  "09:00 AM",
+                  "10:00 AM",
+                  "11:00 AM",
+                  "12:00 PM",
+                  "01:00 PM",
+                  "02:00 PM",
+                  "03:00 PM",
+                  "04:00 PM",
+                ].map((hour) => {
+                  const dayEvents = (eventsByDate.get("2025-01-10") || []).filter((e) =>
+                    e.timeStart.startsWith(hour.split(":")[0]),
+                  );
+
+                  return (
+                    <div
+                      key={hour}
+                      className="flex flex-col sm:flex-row sm:items-center p-3 sm:p-4 gap-3"
+                    >
+                      <div className="w-24 text-xs font-semibold text-muted-foreground shrink-0">
+                        {hour}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        {dayEvents.length === 0 ? (
+                          <span className="text-xs text-muted-foreground/40 italic">
+                            Available slot
+                          </span>
+                        ) : (
+                          dayEvents.map((evt) => {
+                            const style = COLOR_THEME_STYLES[evt.theme];
+                            return (
+                              <button
+                                key={evt.id}
+                                type="button"
+                                onClick={() => setSelectedEvent(evt)}
+                                className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-all ${
+                                  style.bg
+                                } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
+                              >
+                                <div>
+                                  <h4 className="text-xs font-bold">{evt.title}</h4>
+                                  <p className="text-[11px] opacity-80 mt-0.5">
+                                    {evt.timeStart} – {evt.timeEnd || "Wrapup"} •{" "}
+                                    {evt.project || "General"}
+                                  </p>
+                                </div>
+                                {evt.meetingLink && (
+                                  <span className="px-2.5 py-1 rounded-lg bg-background/80 text-[10px] font-semibold">
+                                    Join Link
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: AGENDA VIEW */}
+          {viewMode === "Agenda view" && (
+            <div className="mt-5 space-y-4">
+              <div className="space-y-3">
+                {Array.from(eventsByDate.entries())
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([dateKey, dayList]) => (
+                    <div
+                      key={dateKey}
+                      className="p-4 rounded-2xl border border-border/80 bg-card/60 space-y-3"
+                    >
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-bold text-foreground">
+                            {new Date(dateKey + "T00:00:00").toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">
+                          {dayList.length} events
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {dayList.map((evt) => {
+                          const style = COLOR_THEME_STYLES[evt.theme];
+                          return (
+                            <button
+                              key={evt.id}
+                              type="button"
+                              onClick={() => setSelectedEvent(evt)}
+                              className={`p-3 rounded-xl border text-left transition-all ${
+                                style.bg
+                              } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-1.5 truncate">
+                                  {evt.hasBullet && (
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        style.dotColor || "bg-current"
+                                      }`}
+                                    />
+                                  )}
+                                  <span className="font-semibold text-xs truncate">
+                                    {evt.title}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] opacity-75 font-medium">
+                                  {evt.timeStart}
+                                </span>
+                              </div>
+                              {evt.description && (
+                                <p className="text-[11px] opacity-80 mt-1 line-clamp-1">
+                                  {evt.description}
+                                </p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
+      <EventModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditEventData(null);
+        }}
+        onSave={handleSaveEvent}
+        initialDate={selectedDate}
+        editEvent={editEventData}
+      />
+
+      <EventDetailModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onEdit={handleEditEvent}
+        onDelete={handleDeleteEvent}
+      />
+
+      <DayEventsModal
+        isOpen={!!overflowDate}
+        dateStr={overflowDate || "2025-01-10"}
+        events={overflowDate ? eventsByDate.get(overflowDate) || [] : []}
+        onClose={() => setOverflowDate(null)}
+        onSelectEvent={(evt) => setSelectedEvent(evt)}
+        onAddEvent={(d) => handleOpenAddEvent(d)}
+      />
     </AppShell>
-  );
-}
-
-// FULL VIEW EVENT CARD COMPONENT (With visual priority colors, timeline stacking design rules)
-function EventCard({
-  event,
-  isSelected,
-  onClick,
-  onShiftTime,
-}: {
-  event: CalendarEvent;
-  isSelected: boolean;
-  onClick: () => void;
-  onShiftTime: (newTime: string) => void;
-}) {
-  const [showShiftDropdown, setShowShiftDropdown] = useState(false);
-
-  // High Fidelity Theme Styles depending on event types and task priorities
-  const getStyleTheme = () => {
-    if (event.type === "meeting") {
-      return {
-        bg: "bg-[#8A6CE0]/5 dark:bg-[#8A6CE0]/8 hover:bg-[#8A6CE0]/10 border-[#8A6CE0]/20 text-[#8a6ce0]",
-        tag: "bg-[#8A6CE0]/10 text-[#8a6ce0] border-[#8A6CE0]/20",
-        border: "border-l-4 border-l-[#8A6CE0]",
-        iconColor: "text-[#8a6ce0]",
-      };
-    }
-    if (event.type === "approval") {
-      return {
-        bg: "bg-[#E29A21]/5 dark:bg-[#E29A21]/8 hover:bg-[#E29A21]/10 border-[#E29A21]/20 text-[#e29a21]",
-        tag: "bg-[#E29A21]/10 text-[#e29a21] border-[#E29A21]/20",
-        border: "border-l-4 border-l-[#E29A21]",
-        iconColor: "text-[#e29a21]",
-      };
-    }
-    if (event.type === "deadline") {
-      return {
-        bg: "bg-[#E4664F]/5 dark:bg-[#E4664F]/8 hover:bg-[#E4664F]/10 border-[#E4664F]/20 text-[#e4664f]",
-        tag: "bg-[#E4664F]/10 text-[#e4664f] border-[#E4664F]/20",
-        border: "border-l-4 border-l-[#E4664F]",
-        iconColor: "text-[#e4664f]",
-      };
-    }
-    if (event.type === "time_log") {
-      return {
-        bg: "bg-[#33A579]/5 dark:bg-[#33A579]/8 hover:bg-[#33A579]/10 border-[#33A579]/20 text-[#33a579]",
-        tag: "bg-[#33A579]/10 text-[#33a579] border-[#33A579]/20",
-        border: "border-l-4 border-l-[#33A579]",
-        iconColor: "text-[#33a579]",
-      };
-    }
-    if (event.type === "leave") {
-      return {
-        bg: "bg-slate-100/50 dark:bg-slate-800/20 hover:bg-slate-100 border-slate-200 dark:border-slate-800 text-slate-500",
-        tag: "bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-800",
-        border: "border-l-4 border-l-slate-400",
-        iconColor: "text-slate-400",
-      };
-    }
-    if (event.type === "reminder") {
-      return {
-        bg: "bg-amber-400/5 dark:bg-amber-400/8 hover:bg-amber-400/10 border-amber-400/20 text-amber-600",
-        tag: "bg-amber-400/10 text-amber-600 border-amber-400/20",
-        border: "border-l-4 border-l-amber-400",
-        iconColor: "text-amber-500",
-      };
-    }
-    if (event.type === "birthday") {
-      return {
-        bg: "bg-pink-500/5 dark:bg-pink-500/8 hover:bg-pink-500/10 border-pink-500/20 text-pink-600",
-        tag: "bg-pink-500/10 text-pink-600 border-pink-500/20",
-        border: "border-l-4 border-l-pink-400",
-        iconColor: "text-pink-400",
-      };
-    }
-
-    // Default or Task types colored based on Priority
-    if (event.priority === "HIGH") {
-      return {
-        bg: "bg-red-500/5 dark:bg-red-500/8 hover:bg-red-500/10 border-red-500/20 text-red-600",
-        tag: "bg-red-500/10 text-red-600 border-red-500/20",
-        border: "border-l-4 border-l-red-500",
-        iconColor: "text-red-500",
-      };
-    }
-    if (event.priority === "LOW") {
-      return {
-        bg: "bg-slate-400/5 dark:bg-slate-400/8 hover:bg-slate-400/10 border-slate-400/20 text-slate-500",
-        tag: "bg-slate-400/10 text-slate-500 border-slate-400/20",
-        border: "border-l-4 border-l-slate-400",
-        iconColor: "text-slate-400",
-      };
-    }
-    // MEDIUM is standard task theme
-    return {
-      bg: "bg-[#5A82E8]/5 dark:bg-[#5A82E8]/8 hover:bg-[#5A82E8]/10 border-[#5A82E8]/20 text-[#5a82e8]",
-      tag: "bg-[#5A82E8]/10 text-[#5a82e8] border-[#5A82E8]/20",
-      border: "border-l-4 border-l-[#5A82E8]",
-      iconColor: "text-[#5a82e8]",
-    };
-  };
-
-  const theme = getStyleTheme();
-
-  return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className={`group/card relative p-3.5 px-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-start gap-3 ${theme.border} ${theme.bg} ${
-        isSelected
-          ? "ring-2 ring-[#5A82E8]/60 scale-[1.01] shadow-md bg-opacity-90"
-          : "hover:scale-[1.005] hover:shadow-xs"
-      }`}
-    >
-      {/* Left Column: Time, Title, Description, Meta Stats */}
-      <div className="space-y-1 flex-1 min-w-0 pr-1">
-        {/* Time display */}
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#111111] dark:text-gray-200">
-          <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <span>
-            {event.timeStart} {event.timeEnd ? ` - ${event.timeEnd}` : ""}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h4 className="text-[14px] font-semibold text-[#111111] dark:text-white leading-tight tracking-tight truncate">
-          {event.title}
-        </h4>
-
-        {/* Short description */}
-        {event.description && (
-          <p className="text-[12px] text-[#757575] dark:text-gray-300 font-medium line-clamp-1 leading-normal">
-            {event.description}
-          </p>
-        )}
-
-        {/* Bottom meta stats */}
-        <div className="flex items-center gap-3 pt-1 flex-wrap text-[11px] font-medium text-muted-foreground">
-          {event.hours && (
-            <div className="flex items-center gap-1">
-              <Activity className="w-3 h-3 opacity-70" />
-              <span>{event.hours} hrs</span>
-            </div>
-          )}
-          {event.participants && (
-            <div className="flex items-center gap-1">
-              <Users className="w-3 h-3 opacity-70" />
-              <span>{event.participants.length} attending</span>
-            </div>
-          )}
-          {event.checklist && (
-            <div className="flex items-center gap-1 text-[#33A579]">
-              <CheckSquare className="w-3 h-3" />
-              <span>
-                {event.checklist.filter((c) => c.completed).length}/{event.checklist.length}{" "}
-                subtasks
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right Column: Project Badge & Priority Badge + Shift Time Action */}
-      <div className="flex flex-col items-end gap-1.5 shrink-0 pl-1">
-        {/* Project Badge */}
-        <span
-          className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-lg border whitespace-nowrap shadow-2xs ${theme.tag}`}
-        >
-          📂 {event.project}
-        </span>
-
-        {/* Priority Badge */}
-        {event.priority && (
-          <span
-            className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md whitespace-nowrap ${
-              event.priority === "HIGH"
-                ? "bg-red-100 text-red-600 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50"
-                : event.priority === "MEDIUM"
-                  ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900/50"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800"
-            }`}
-          >
-            {event.priority}
-          </span>
-        )}
-
-        {/* Shift Time Action */}
-        <div className="relative mt-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowShiftDropdown(!showShiftDropdown);
-            }}
-            className="h-6 px-2 rounded-md bg-white dark:bg-[#1a1a1e] border border-border/80 text-[10px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 text-muted-foreground shadow-2xs opacity-80 group-hover/card:opacity-100 transition-opacity cursor-pointer"
-          >
-            Shift Time
-          </button>
-
-          {showShiftDropdown && (
-            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-[#1a1a1e] border border-border/80 shadow-xl rounded-xl p-1.5 z-50 w-32 space-y-1">
-              <p className="text-[10px] font-semibold text-center text-muted-foreground border-b pb-1 uppercase">
-                Move slot:
-              </p>
-              {["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"].map((t) => (
-                <button
-                  key={t}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onShiftTime(t);
-                    setShowShiftDropdown(false);
-                    toast.success(`Rescheduled to ${t}`);
-                  }}
-                  className="w-full text-left px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-[11px] font-medium transition-colors cursor-pointer"
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// MINI CARD COMPONENT FOR GRID COLUMNS (WEEK GRID VIEW)
-function MiniEventCard({
-  event,
-  isSelected,
-  onClick,
-}: {
-  event: CalendarEvent;
-  isSelected: boolean;
-  onClick: () => void;
-}) {
-  const getStyleTheme = () => {
-    if (event.type === "meeting") {
-      return "bg-[#8A6CE0]/10 border-t-2 border-t-[#8A6CE0] text-[#8a6ce0] border-border/20";
-    }
-    if (event.type === "approval") {
-      return "bg-[#E29A21]/10 border-t-2 border-t-[#E29A21] text-[#e29a21] border-border/20";
-    }
-    if (event.type === "deadline") {
-      return "bg-[#E4664F]/10 border-t-2 border-t-[#E4664F] text-[#e4664f] border-border/20";
-    }
-    if (event.type === "time_log") {
-      return "bg-[#33A579]/10 border-t-2 border-t-[#33A579] text-[#33a579] border-border/20";
-    }
-
-    // Tasks based on priority
-    if (event.priority === "HIGH") {
-      return "bg-red-500/10 border-t-2 border-t-red-500 text-red-600 border-border/20";
-    }
-    if (event.priority === "LOW") {
-      return "bg-slate-400/10 border-t-2 border-t-slate-400 text-slate-500 border-border/20";
-    }
-    return "bg-[#5A82E8]/10 border-t-2 border-t-[#5A82E8] text-[#5a82e8] border-border/20";
-  };
-
-  const styling = getStyleTheme();
-
-  return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className={`p-2 rounded-xl border text-xs leading-tight cursor-pointer transition-all ${styling} ${
-        isSelected ? "ring-2 ring-[#5A82E8]/60 shadow-xs scale-102" : "hover:scale-[1.02]"
-      }`}
-    >
-      <div className="flex items-center justify-between text-[10px] font-medium opacity-75">
-        <span>{event.timeStart}</span>
-        {event.hours && <span>{event.hours}h</span>}
-      </div>
-      <h5 className="font-semibold truncate mt-1 text-[#111111] dark:text-white text-[12px] tracking-tight">
-        {event.title}
-      </h5>
-      <p className="text-[10px] opacity-80 mt-0.5 font-medium truncate">{event.project}</p>
-    </div>
   );
 }

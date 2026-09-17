@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, SectionTitle } from "@/components/app-shell";
+import { signOutUser } from "@/lib/auth";
 import {
   User,
   Bell,
@@ -18,6 +19,7 @@ import {
   Key,
   Smartphone,
   AlertCircle,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -37,6 +39,7 @@ const groups = [
 ];
 
 function SettingsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Profile");
 
   // State for Profile
@@ -258,6 +261,29 @@ function SettingsPage() {
                       </button>
                     </div>
                   </form>
+                </Card>
+
+                {/* Account & Active Session */}
+                <Card className="p-5 sm:p-6">
+                  <SectionTitle title="Account Session" />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">
+                        Active Workspace Session
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Logged in as {profileEmail}. Sign out anytime to return to the login screen.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => signOutUser(navigate)}
+                      className="flex items-center gap-2 h-9 px-4 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-semibold transition-colors cursor-pointer w-fit"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out of Looped</span>
+                    </button>
+                  </div>
                 </Card>
               </motion.div>
             )}
