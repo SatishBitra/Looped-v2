@@ -95,9 +95,9 @@ export function GroupSettingsModal({
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          className="relative w-full max-w-lg bg-card border border-border/90 rounded-[28px] p-6 shadow-2xl z-10 overflow-hidden"
+          className="relative w-full max-w-lg bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] p-6 shadow-2xl z-10 overflow-hidden"
         >
-          <div className="flex items-center justify-between pb-4 border-b border-border/70">
+          <div className="flex items-center justify-between pb-4 border-b border-[#E7E7EC] dark:border-[#323238]">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-purple-600/10 text-purple-600 grid place-items-center">
                 <Settings className="w-4 h-4" />
@@ -110,7 +110,7 @@ export function GroupSettingsModal({
             <button
               onClick={onClose}
               type="button"
-              className="w-8 h-8 rounded-full hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -123,7 +123,7 @@ export function GroupSettingsModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-10 px-3.5 rounded-xl border border-border/80 bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                className="w-full h-10 px-3.5 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
               />
             </div>
 
@@ -155,7 +155,7 @@ export function GroupSettingsModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="w-full p-3 rounded-xl border border-border/80 bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground resize-none"
+                className="w-full p-3 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground resize-none"
               />
             </div>
 
@@ -165,11 +165,11 @@ export function GroupSettingsModal({
                   Group Members ({members.length})
                 </label>
               </div>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto border border-border/80 rounded-2xl p-2 bg-muted/20">
+              <div className="space-y-1.5 max-h-40 overflow-y-auto border border-[#E7E7EC] dark:border-[#323238] rounded-2xl p-2 bg-[#F8F8FA] dark:bg-[#1c1c20]">
                 {members.map((mem) => (
                   <div
                     key={mem.id}
-                    className="flex items-center justify-between p-2 rounded-xl bg-card border border-border/60"
+                    className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] shadow-xs"
                   >
                     <div className="flex items-center gap-2.5">
                       <img
@@ -195,7 +195,7 @@ export function GroupSettingsModal({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-border/70 flex items-center justify-between gap-2.5">
+            <div className="pt-3 border-t border-[#E7E7EC] dark:border-[#323238] flex items-center justify-between gap-2.5">
               <button
                 type="button"
                 onClick={handleDelete}
@@ -209,13 +209,13 @@ export function GroupSettingsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all cursor-pointer shadow-sm active:scale-95"
+                  className="px-5 py-2 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
                   Save Changes
                 </button>

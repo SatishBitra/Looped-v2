@@ -105,9 +105,14 @@ function Sidebar() {
     >
       <Link
         to="/home"
-        className="w-10 h-10 rounded-full bg-foreground text-background grid place-items-center font-semibold text-[15px] mb-6"
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400/20 via-blue-500/15 to-indigo-400/20 border border-sky-400/30 dark:border-sky-400/20 grid place-items-center mb-6 shadow-xs hover:scale-105 transition-transform"
+        title="Looped Home"
       >
-        L
+        <img
+          src="/assets/v2-icon-black.png"
+          alt="Looped Logo"
+          className="w-5.5 h-5.5 object-contain dark:invert"
+        />
       </Link>
 
       <nav className="flex-1 flex flex-col gap-1.5 items-center justify-center">
@@ -170,6 +175,15 @@ function Sidebar() {
     </aside>
   );
 }
+
+const STATUS_DOT_COLORS: Record<string, string> = {
+  Online: "bg-[#33A579]",
+  Busy: "bg-[#E4664F]",
+  "In Meeting": "bg-[#F1C40F]",
+  "Focus Time": "bg-[#9B59B6]",
+  Away: "bg-[#A8A8A8]",
+  Offline: "bg-[#7F8C8D]",
+};
 
 function TopNav({
   searchQuery = "",
@@ -435,67 +449,6 @@ function TopNav({
     setMessageInputValue("");
   };
 
-  // Team Popover State
-  const [isTeamPopoverOpen, setIsTeamPopoverOpen] = useState(false);
-  const [teamSearchQuery, setTeamSearchQuery] = useState("");
-  const teamMembers = [
-    {
-      id: "emp-1",
-      name: "Sandy M",
-      avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
-      role: "Frontend Developer",
-      status: "Online",
-      activity: "Optimizing glassmorphism CSS render loops",
-      pod: "Pod Alpha",
-    },
-    {
-      id: "emp-2",
-      name: "Luca R",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
-      role: "Motion Designer",
-      status: "In Meeting",
-      activity: "Client alignment on ACME film project",
-      pod: "Pod Alpha",
-    },
-    {
-      id: "emp-3",
-      name: "Sara D",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200",
-      role: "Brand Designer",
-      status: "Focus Time",
-      activity: "Pushed design token updates for blank site",
-      pod: "Pod Beta",
-    },
-    {
-      id: "emp-4",
-      name: "Marta L",
-      avatar:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
-      role: "Production Artist",
-      status: "Online",
-      activity: "Rendering print variants for Northwind Q4",
-      pod: "Pod Beta",
-    },
-  ];
-
-  const filteredTeam = teamMembers.filter(
-    (m) =>
-      m.name.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-      m.role.toLowerCase().includes(teamSearchQuery.toLowerCase()),
-  );
-
-  const STATUS_DOT_COLORS: Record<string, string> = {
-    Online: "bg-[#33A579]",
-    Busy: "bg-[#E4664F]",
-    "In Meeting": "bg-[#F1C40F]",
-    "Focus Time": "bg-[#9B59B6]",
-    Away: "bg-[#A8A8A8]",
-    Offline: "bg-[#7F8C8D]",
-  };
-
   const inboxUnreadCount = popoverNotifs.filter(
     (n) => n.tab === "inbox" && n.status === "unread",
   ).length;
@@ -523,10 +476,7 @@ function TopNav({
   return (
     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-[#E7E7EC] dark:border-[#323238] pb-6 mb-8 select-none relative z-30">
       {/* Invisible backdrop to dismiss popovers */}
-      {(isNotifPopoverOpen ||
-        isProfilePopoverOpen ||
-        isMessagesPopoverOpen ||
-        isTeamPopoverOpen) && (
+      {(isNotifPopoverOpen || isProfilePopoverOpen || isMessagesPopoverOpen) && (
         <div
           className="fixed inset-0 z-40 bg-transparent"
           onClick={() => {
@@ -534,7 +484,6 @@ function TopNav({
             setIsProfilePopoverOpen(false);
             setIsStatusDropdownOpen(false);
             setIsMessagesPopoverOpen(false);
-            setIsTeamPopoverOpen(false);
           }}
         />
       )}
@@ -611,7 +560,6 @@ function TopNav({
                   setIsMessagesPopoverOpen(!isMessagesPopoverOpen);
                   setIsNotifPopoverOpen(false);
                   setIsProfilePopoverOpen(false);
-                  setIsTeamPopoverOpen(false);
                 }}
                 className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
                   isMessagesPopoverOpen
@@ -818,130 +766,6 @@ function TopNav({
               </AnimatePresence>
             </div>
 
-            {/* Team Button & Popover container */}
-            <div className="relative">
-              <button
-                id="team-popover-trigger"
-                onClick={() => {
-                  setIsTeamPopoverOpen(!isTeamPopoverOpen);
-                  setIsNotifPopoverOpen(false);
-                  setIsProfilePopoverOpen(false);
-                  setIsMessagesPopoverOpen(false);
-                }}
-                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
-                  isTeamPopoverOpen
-                    ? "text-[#111111] dark:text-white border-[#A8A8A8]"
-                    : "text-[#757575]"
-                }`}
-              >
-                <Users className="w-[18px] h-[18px]" strokeWidth={1.75} />
-              </button>
-
-              <AnimatePresence>
-                {isTeamPopoverOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-12 w-[290px] sm:w-[350px] bg-gradient-to-b from-white/95 via-white/90 to-white/80 dark:from-[#1c1c1f]/95 dark:via-[#1c1c1f]/90 dark:to-[#18181b]/80 backdrop-blur-[24px] border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden text-left"
-                  >
-                    <div className="flex flex-col h-[380px]">
-                      {/* Header */}
-                      <div className="p-4 pb-2 flex items-center justify-between">
-                        <span className="font-extrabold text-[15px] text-foreground">
-                          Team Members
-                        </span>
-                        <span className="text-[10px] bg-[#33A579]/10 text-[#33A579] px-2 py-0.5 rounded-full font-bold">
-                          {teamMembers.filter((m) => m.status === "Online").length} Active Now
-                        </span>
-                      </div>
-
-                      {/* Search Team */}
-                      <div className="px-4 py-2 relative">
-                        <Search className="w-3.5 h-3.5 absolute left-7 top-1/2 -translate-y-1/2 text-[#A8A8A8]" />
-                        <input
-                          type="text"
-                          placeholder="Search members..."
-                          value={teamSearchQuery}
-                          onChange={(e) => setTeamSearchQuery(e.target.value)}
-                          className="h-8 pl-8 pr-3 w-full rounded-xl bg-accent/40 text-[12px] placeholder:text-[#A8A8A8] focus:outline-none"
-                        />
-                      </div>
-
-                      {/* Team List Area */}
-                      <div className="flex-1 overflow-y-auto px-2 py-1">
-                        {filteredTeam.map((m) => (
-                          <div
-                            key={m.id}
-                            className="p-2 rounded-xl hover:bg-accent/30 transition-all flex items-start gap-3 relative group"
-                          >
-                            <div className="relative shrink-0">
-                              <img
-                                src={m.avatar}
-                                alt={m.name}
-                                referrerPolicy="no-referrer"
-                                className="w-9 h-9 rounded-full object-cover border border-border"
-                              />
-                              <span
-                                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white dark:border-[#1a1a1c] ${
-                                  m.status === "Online"
-                                    ? "bg-[#33A579]"
-                                    : m.status === "In Meeting"
-                                      ? "bg-[#F1C40F]"
-                                      : m.status === "Focus Time"
-                                        ? "bg-[#9B59B6]"
-                                        : "bg-[#A8A8A8]"
-                                }`}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0 pr-14">
-                              <span className="text-[12px] font-bold text-foreground block truncate">
-                                {m.name}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground block truncate font-medium">
-                                {m.role} •{" "}
-                                <span className="font-semibold text-accent-foreground">
-                                  {m.pod}
-                                </span>
-                              </span>
-                              <span className="text-[10px] text-muted-foreground block italic truncate mt-0.5 font-medium">
-                                "{m.activity}"
-                              </span>
-                            </div>
-
-                            {/* Nudge/Ping Button */}
-                            <button
-                              onClick={() => {
-                                toast.success(`Sent nudge to ${m.name}!`);
-                              }}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 px-2 py-1 bg-[#7000FF]/10 text-[#7000FF] hover:bg-[#7000FF] hover:text-white rounded-lg text-[10px] font-bold transition-all shadow-sm"
-                            >
-                              Nudge
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* View Dedicated Team Directory */}
-                      <div className="border-t border-[#E7E7EC] dark:border-[#323238] p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
-                        <button
-                          onClick={() => {
-                            setIsTeamPopoverOpen(false);
-                            onOpenModal?.("team");
-                          }}
-                          className="w-full h-10 rounded-xl bg-[#111111] dark:bg-white text-white dark:text-[#111111] hover:opacity-90 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                        >
-                          <span>View Team Directory</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
             {/* Notifications Button & Popover container */}
             <div className="relative">
               <button
@@ -949,6 +773,7 @@ function TopNav({
                 onClick={() => {
                   setIsNotifPopoverOpen(!isNotifPopoverOpen);
                   setIsProfilePopoverOpen(false);
+                  setIsMessagesPopoverOpen(false);
                 }}
                 className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
                   isNotifPopoverOpen
@@ -1199,6 +1024,7 @@ function TopNav({
               onClick={() => {
                 setIsProfilePopoverOpen(!isProfilePopoverOpen);
                 setIsNotifPopoverOpen(false);
+                setIsMessagesPopoverOpen(false);
                 setIsStatusDropdownOpen(false);
               }}
               className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:border-[#A8A8A8] transition-all relative ${
@@ -1496,8 +1322,12 @@ export function AppShell({
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground"
                 >
-                  <span className="w-8 h-8 rounded-full bg-foreground text-background grid place-items-center text-sm font-semibold">
-                    L
+                  <span className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400/20 via-blue-500/15 to-indigo-400/20 border border-sky-400/30 dark:border-sky-400/20 grid place-items-center shadow-xs">
+                    <img
+                      src="/assets/v2-icon-black.png"
+                      alt="Looped Logo"
+                      className="w-4.5 h-4.5 object-contain dark:invert"
+                    />
                   </span>
                   <span>Loooped</span>
                 </Link>

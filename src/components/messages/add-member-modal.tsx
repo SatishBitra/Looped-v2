@@ -55,9 +55,9 @@ export function AddMemberModal({
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          className="relative w-full max-w-md bg-card border border-border/90 rounded-[28px] p-6 shadow-2xl z-10"
+          className="relative w-full max-w-md bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] p-6 shadow-2xl z-10"
         >
-          <div className="flex items-center justify-between pb-4 border-b border-border/70">
+          <div className="flex items-center justify-between pb-4 border-b border-[#E7E7EC] dark:border-[#323238]">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-blue-600/10 text-blue-600 grid place-items-center">
                 <UserPlus className="w-4 h-4" />
@@ -70,7 +70,7 @@ export function AddMemberModal({
             <button
               onClick={onClose}
               type="button"
-              className="w-8 h-8 rounded-full hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -90,7 +90,9 @@ export function AddMemberModal({
                     type="button"
                     onClick={() => toggleSelect(mem.id)}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all text-left cursor-pointer ${
-                      isSelected ? "bg-accent border border-border" : "hover:bg-muted/40"
+                      isSelected
+                        ? "bg-[#F8F8FA] dark:bg-[#1c1c20] border border-[#E7E7EC] dark:border-[#323238] shadow-xs"
+                        : "hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -119,11 +121,11 @@ export function AddMemberModal({
             )}
           </div>
 
-          <div className="mt-5 pt-3 border-t border-border/70 flex items-center justify-end gap-2.5">
+          <div className="mt-5 pt-3 border-t border-[#E7E7EC] dark:border-[#323238] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c] transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -131,7 +133,7 @@ export function AddMemberModal({
               type="button"
               disabled={selectedIds.length === 0}
               onClick={handleAdd}
-              className="px-5 py-2 rounded-xl bg-blue-600 disabled:opacity-50 text-white text-xs font-semibold hover:bg-blue-700 transition-all cursor-pointer shadow-sm active:scale-95"
+              className="px-5 py-2 rounded-xl bg-blue-600 disabled:opacity-50 text-white text-xs font-semibold hover:bg-blue-700 transition-all cursor-pointer shadow-xs active:scale-95"
             >
               Add Selected ({selectedIds.length})
             </button>

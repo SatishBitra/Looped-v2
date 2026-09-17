@@ -43,34 +43,34 @@ export function GroupInfoPanel({
   const links = thread.sharedLinks || [];
 
   return (
-    <div className="w-full lg:w-[320px] xl:w-[360px] h-full bg-card border-l border-border/80 flex flex-col shrink-0 overflow-y-auto overflow-x-hidden">
+    <div className="w-full lg:w-[320px] xl:w-[360px] h-full bg-white dark:bg-[#242428] border-l border-[#E7E7EC] dark:border-[#323238] flex flex-col shrink-0 overflow-y-auto overflow-x-hidden">
       {/* Panel Top Header */}
-      <div className="p-4 sm:p-5 flex items-center justify-between border-b border-border/60">
+      <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#E7E7EC] dark:border-[#323238]">
         <h3 className="text-sm sm:text-base font-bold text-foreground">
           {isGroup ? "Group Information" : "Contact Information"}
         </h3>
         <button
           type="button"
           onClick={onClose}
-          className="w-8 h-8 rounded-full hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="p-5 flex flex-col items-center text-center border-b border-border/60">
+      <div className="p-5 flex flex-col items-center text-center border-b border-[#E7E7EC] dark:border-[#323238]">
         {/* Large Centered Avatar */}
         {thread.avatar ? (
           <img
             src={thread.avatar}
             alt={thread.name}
-            className="w-20 h-20 rounded-full object-cover shadow-sm ring-4 ring-muted/30"
+            className="w-20 h-20 rounded-full object-cover shadow-xs ring-4 ring-[#E7E7EC]/50 dark:ring-[#323238]/50"
           />
         ) : (
           <div
             className={`w-20 h-20 rounded-full ${
               thread.avatarBg || "bg-blue-600"
-            } text-white grid place-items-center text-2xl font-bold shadow-sm ring-4 ring-muted/30`}
+            } text-white grid place-items-center text-2xl font-bold shadow-xs ring-4 ring-[#E7E7EC]/50 dark:ring-[#323238]/50`}
           >
             {thread.name.charAt(0)}
           </div>
@@ -99,9 +99,9 @@ export function GroupInfoPanel({
           <button
             type="button"
             onClick={onToggleMute}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-muted/40 hover:bg-accent transition-all cursor-pointer group"
+            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-[#F8F8FA] dark:bg-[#1c1c20] hover:bg-[#F4F4F7] dark:hover:bg-[#25252a] border border-[#E7E7EC] dark:border-[#323238] transition-all cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-xl bg-card border border-border/80 grid place-items-center text-muted-foreground group-hover:text-foreground shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center text-muted-foreground group-hover:text-foreground shadow-xs">
               {thread.isMuted ? (
                 <BellOff className="w-4 h-4 text-amber-500" />
               ) : (
@@ -117,13 +117,13 @@ export function GroupInfoPanel({
           <button
             type="button"
             onClick={onTogglePin}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-muted/40 hover:bg-accent transition-all cursor-pointer group"
+            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-[#F8F8FA] dark:bg-[#1c1c20] hover:bg-[#F4F4F7] dark:hover:bg-[#25252a] border border-[#E7E7EC] dark:border-[#323238] transition-all cursor-pointer group"
           >
             <div
               className={`w-9 h-9 rounded-xl border grid place-items-center shadow-xs ${
                 thread.isPinned
                   ? "bg-foreground text-background border-foreground"
-                  : "bg-card border-border/80 text-muted-foreground group-hover:text-foreground"
+                  : "bg-white dark:bg-[#242428] border-[#E7E7EC] dark:border-[#323238] text-muted-foreground group-hover:text-foreground"
               }`}
             >
               <Pin className="w-4 h-4" />
@@ -137,9 +137,9 @@ export function GroupInfoPanel({
           <button
             type="button"
             onClick={onOpenAddMember}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-muted/40 hover:bg-accent transition-all cursor-pointer group"
+            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-[#F8F8FA] dark:bg-[#1c1c20] hover:bg-[#F4F4F7] dark:hover:bg-[#25252a] border border-[#E7E7EC] dark:border-[#323238] transition-all cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-xl bg-card border border-border/80 grid place-items-center text-muted-foreground group-hover:text-foreground shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center text-muted-foreground group-hover:text-foreground shadow-xs">
               <UserPlus className="w-4 h-4" />
             </div>
             <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-foreground">
@@ -151,9 +151,9 @@ export function GroupInfoPanel({
           <button
             type="button"
             onClick={onOpenSettings}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-muted/40 hover:bg-accent transition-all cursor-pointer group"
+            className="flex flex-col items-center gap-1.5 p-2 rounded-2xl bg-[#F8F8FA] dark:bg-[#1c1c20] hover:bg-[#F4F4F7] dark:hover:bg-[#25252a] border border-[#E7E7EC] dark:border-[#323238] transition-all cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-xl bg-card border border-border/80 grid place-items-center text-muted-foreground group-hover:text-foreground shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center text-muted-foreground group-hover:text-foreground shadow-xs">
               <Settings className="w-4 h-4" />
             </div>
             <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-foreground">
@@ -183,7 +183,10 @@ export function GroupInfoPanel({
             </div>
             <div className="space-y-2">
               {members.slice(0, 4).map((m) => (
-                <div key={m.id} className="flex items-center justify-between">
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between p-1 rounded-xl hover:bg-[#F8F8FA] dark:hover:bg-[#1c1c20] transition-colors"
+                >
                   <div className="flex items-center gap-2.5">
                     <div className="relative">
                       <img
@@ -192,7 +195,7 @@ export function GroupInfoPanel({
                         className="w-7 h-7 rounded-full object-cover"
                       />
                       {m.isOnline && (
-                        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+                        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white dark:ring-[#242428]" />
                       )}
                     </div>
                     <div>
@@ -203,7 +206,7 @@ export function GroupInfoPanel({
                     </div>
                   </div>
                   {m.role === "admin" && (
-                    <span className="px-1.5 py-0.5 rounded-md bg-muted text-[10px] font-semibold text-muted-foreground">
+                    <span className="px-1.5 py-0.5 rounded-md bg-[#F4F4F7] dark:bg-[#1a1a1c] border border-[#E7E7EC] dark:border-[#323238] text-[10px] font-semibold text-muted-foreground">
                       Admin
                     </span>
                   )}
@@ -231,7 +234,7 @@ export function GroupInfoPanel({
                 <div
                   key={i}
                   onClick={() => setSelectedImage(img)}
-                  className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:opacity-90 hover:scale-105 transition-all shadow-xs border border-border/50"
+                  className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:opacity-90 hover:scale-105 transition-all shadow-xs border border-[#E7E7EC] dark:border-[#323238]"
                 >
                   <img src={img} alt="Shared Asset" className="w-full h-full object-cover" />
                 </div>
@@ -258,10 +261,10 @@ export function GroupInfoPanel({
                 <div
                   key={f.id}
                   onClick={() => toast.success(`Downloading ${f.name}`)}
-                  className="flex items-center justify-between p-2 rounded-xl border border-border/70 hover:bg-muted/30 transition-all cursor-pointer group"
+                  className="flex items-center justify-between p-2 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F8F8FA] dark:bg-[#1c1c20] hover:bg-white dark:hover:bg-[#242428] transition-all cursor-pointer group shadow-xs"
                 >
                   <div className="flex items-center gap-2.5 truncate">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center font-bold text-[10px] text-foreground shrink-0 uppercase">
+                    <div className="w-8 h-8 rounded-lg bg-[#EAEAEF] dark:bg-[#25252a] flex items-center justify-center font-bold text-[10px] text-foreground shrink-0 uppercase">
                       {f.extension}
                     </div>
                     <div className="truncate">
@@ -298,7 +301,7 @@ export function GroupInfoPanel({
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2.5 p-2 rounded-xl border border-border/70 hover:bg-muted/30 transition-all cursor-pointer group"
+                  className="flex items-center gap-2.5 p-2 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F8F8FA] dark:bg-[#1c1c20] hover:bg-white dark:hover:bg-[#242428] transition-all cursor-pointer group shadow-xs"
                 >
                   {link.thumbnail ? (
                     <img
@@ -307,7 +310,7 @@ export function GroupInfoPanel({
                       className="w-10 h-10 rounded-lg object-cover shrink-0"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-[#EAEAEF] dark:bg-[#25252a] flex items-center justify-center shrink-0">
                       <ExternalLink className="w-4 h-4 text-muted-foreground" />
                     </div>
                   )}

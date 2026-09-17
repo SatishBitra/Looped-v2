@@ -339,15 +339,15 @@ export function MessagesPage() {
     <AppShell>
       <div className="w-full max-w-[1440px] mx-auto pb-4">
         {/* Main Messenger Container */}
-        <div className="bg-card border border-border/80 rounded-[28px] sm:rounded-[32px] h-[calc(100vh-140px)] min-h-[640px] max-h-[920px] shadow-sm flex overflow-hidden">
+        <div className="bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] sm:rounded-[32px] h-[calc(100vh-140px)] min-h-[640px] max-h-[920px] shadow-[var(--shadow-soft)] flex overflow-hidden">
           {/* ================= COLUMN 1: THREADS LIST ================= */}
           <div
-            className={`w-full md:w-[340px] lg:w-[380px] border-r border-border/70 flex flex-col shrink-0 bg-card ${
+            className={`w-full md:w-[340px] lg:w-[380px] border-r border-[#E7E7EC] dark:border-[#323238] flex flex-col shrink-0 bg-white dark:bg-[#242428] ${
               showChatOnMobile ? "hidden md:flex" : "flex"
             }`}
           >
             {/* Thread Header: Title + Create Button */}
-            <div className="p-4 sm:p-5 pb-3 flex items-center justify-between border-b border-border/60">
+            <div className="p-4 sm:p-5 pb-3 flex items-center justify-between border-b border-[#E7E7EC] dark:border-[#323238]">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                   Messages
@@ -356,7 +356,7 @@ export function MessagesPage() {
               <button
                 type="button"
                 onClick={() => setIsCreateGroupOpen(true)}
-                className="w-9 h-9 rounded-xl border border-border/80 hover:bg-accent grid place-items-center text-foreground transition-colors cursor-pointer shadow-xs"
+                className="w-9 h-9 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-[#EAEAEF] dark:hover:bg-[#25252a] grid place-items-center text-foreground transition-colors cursor-pointer shadow-xs"
                 title="Create new group"
               >
                 <Plus className="w-4 h-4" />
@@ -373,32 +373,32 @@ export function MessagesPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search messages"
-                  className="w-full h-10 pl-9 pr-12 rounded-xl bg-muted/40 border border-border/70 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all"
+                  className="w-full h-10 pl-9 pr-12 rounded-xl bg-[#F4F4F7] dark:bg-[#1a1a1c] border border-[#E7E7EC] dark:border-[#323238] text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all"
                 />
-                <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-muted text-[10px] font-semibold text-muted-foreground border border-border/60">
+                <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-white dark:bg-[#242428] text-[10px] font-semibold text-muted-foreground border border-[#E7E7EC] dark:border-[#323238]">
                   ⌘K
                 </div>
               </div>
             </div>
 
             {/* Filter Tabs matching Screenshot: [ All 234 ⌵ ] [ Newest ⌵ ] */}
-            <div className="px-4 pb-2 flex items-center justify-between gap-2 border-b border-border/60">
+            <div className="px-4 pb-2 flex items-center justify-between gap-2 border-b border-[#E7E7EC] dark:border-[#323238]">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setActiveCategory("all")}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeCategory === "all"
-                      ? "bg-foreground text-background shadow-xs"
-                      : "text-muted-foreground hover:bg-muted/40"
+                      ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
+                      : "text-muted-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
                   }`}
                 >
                   <span>All</span>
                   <span
                     className={`px-1.5 py-0.2 rounded-md text-[10px] ${
                       activeCategory === "all"
-                        ? "bg-background/20 text-background"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-white/20 dark:bg-[#111111]/20 text-white dark:text-[#111111]"
+                        : "bg-[#EAEAEF] dark:bg-[#2e2e34] text-muted-foreground"
                     }`}
                   >
                     234
@@ -410,8 +410,8 @@ export function MessagesPage() {
                   onClick={() => setActiveCategory("groups")}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     activeCategory === "groups"
-                      ? "bg-foreground text-background shadow-xs"
-                      : "text-muted-foreground hover:bg-muted/40"
+                      ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
+                      : "text-muted-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
                   }`}
                 >
                   Groups
@@ -423,13 +423,13 @@ export function MessagesPage() {
                 <button
                   type="button"
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                  className="px-2.5 py-1.5 rounded-xl border border-border/70 hover:bg-accent text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#242428] text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <span className="capitalize">{sortBy}</span>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </button>
                 {isSortDropdownOpen && (
-                  <div className="absolute right-0 top-9 w-32 bg-card border border-border/90 rounded-xl p-1 shadow-xl z-20">
+                  <div className="absolute right-0 top-9 w-32 bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-xl p-1 shadow-xl z-20">
                     {(["newest", "unread", "starred"] as const).map((opt) => (
                       <button
                         key={opt}
@@ -438,7 +438,7 @@ export function MessagesPage() {
                           setSortBy(opt);
                           setIsSortDropdownOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium capitalize hover:bg-accent"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium capitalize hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
                       >
                         {opt}
                       </button>
@@ -473,8 +473,8 @@ export function MessagesPage() {
                     }}
                     className={`w-full p-2.5 sm:p-3 rounded-2xl flex items-center gap-3 transition-all cursor-pointer text-left relative group ${
                       isActive
-                        ? "bg-accent/80 border border-border/80 shadow-xs"
-                        : "hover:bg-muted/30 border border-transparent"
+                        ? "bg-[#F4F4F7] dark:bg-[#1c1c20] border border-[#E7E7EC] dark:border-[#323238] shadow-xs"
+                        : "hover:bg-[#F8F8FA] dark:hover:bg-[#1f1f23] border border-transparent"
                     }`}
                   >
                     {/* Avatar with Online indicator or App badge */}
@@ -497,12 +497,12 @@ export function MessagesPage() {
 
                       {/* Online Status Dot */}
                       {t.isOnline && (
-                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#242428]" />
                       )}
 
                       {/* Service Badge (e.g. Messenger, Gmail, WhatsApp) */}
                       {t.serviceBadge && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-blue-500 text-white text-[8px] font-bold grid place-items-center ring-1 ring-card">
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-blue-500 text-white text-[8px] font-bold grid place-items-center ring-1 ring-white dark:ring-[#242428]">
                           {t.serviceBadge.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -558,18 +558,18 @@ export function MessagesPage() {
 
           {/* ================= COLUMN 2: ACTIVE CHAT CONVERSATION ================= */}
           <div
-            className={`flex-1 flex flex-col h-full bg-card min-w-0 ${
+            className={`flex-1 flex flex-col h-full bg-[#F8F8FA] dark:bg-[#1c1c20] min-w-0 ${
               showChatOnMobile ? "flex" : "hidden md:flex"
             }`}
           >
             {/* Chat Window Top Bar Header */}
-            <div className="p-3.5 sm:p-4 border-b border-border/70 flex items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 border-b border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {/* Back button on mobile */}
                 <button
                   type="button"
                   onClick={() => setShowChatOnMobile(false)}
-                  className="md:hidden w-8 h-8 rounded-xl border border-border grid place-items-center text-muted-foreground shrink-0"
+                  className="md:hidden w-8 h-8 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] grid place-items-center text-muted-foreground shrink-0"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
@@ -592,7 +592,7 @@ export function MessagesPage() {
                     </div>
                   )}
                   {activeThread.isOnline && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#242428]" />
                   )}
                 </div>
 
@@ -628,14 +628,14 @@ export function MessagesPage() {
                         key={m.id}
                         src={m.avatar}
                         alt={m.name}
-                        className="w-7 h-7 rounded-full object-cover ring-2 ring-card"
+                        className="w-7 h-7 rounded-full object-cover ring-2 ring-white dark:ring-[#242428]"
                         title={m.name}
                       />
                     ))}
                     <button
                       type="button"
                       onClick={() => setIsAddMemberOpen(true)}
-                      className="w-7 h-7 rounded-full bg-muted border border-border text-[10px] font-bold text-muted-foreground hover:text-foreground grid place-items-center ring-2 ring-card transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-full bg-[#F4F4F7] dark:bg-[#1a1a1c] border border-[#E7E7EC] dark:border-[#323238] text-[10px] font-bold text-muted-foreground hover:text-foreground grid place-items-center ring-2 ring-white dark:ring-[#242428] transition-colors cursor-pointer"
                       title="Add member"
                     >
                       +
@@ -647,7 +647,7 @@ export function MessagesPage() {
                 <button
                   type="button"
                   onClick={() => setIsVoiceCallOpen(true)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-border/80 hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
                   title="Start voice call"
                 >
                   <Phone className="w-4 h-4" />
@@ -657,7 +657,7 @@ export function MessagesPage() {
                 <button
                   type="button"
                   onClick={() => setIsVideoCallOpen(true)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-border/80 hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
                   title="Start video call"
                 >
                   <Video className="w-4 h-4" />
@@ -668,7 +668,7 @@ export function MessagesPage() {
                   <button
                     type="button"
                     onClick={() => setIsGroupSettingsOpen(true)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-border/80 hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
                     title="Group settings (CRUD)"
                   >
                     <Settings className="w-4 h-4" />
@@ -682,7 +682,7 @@ export function MessagesPage() {
                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border transition-colors grid place-items-center cursor-pointer shadow-xs ${
                     isRightPanelOpen
                       ? "bg-foreground text-background border-foreground"
-                      : "border-border/80 text-muted-foreground hover:text-foreground hover:bg-accent"
+                      : "border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-[#2e2e34]"
                   }`}
                   title={isRightPanelOpen ? "Close information panel" : "View group info"}
                 >
@@ -699,9 +699,9 @@ export function MessagesPage() {
                   return (
                     <div key={m.id} className="relative flex items-center justify-center my-4">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-border/60" />
+                        <div className="w-full border-t border-[#E7E7EC] dark:border-[#323238]" />
                       </div>
-                      <span className="relative px-3 bg-card text-[11px] font-semibold text-muted-foreground">
+                      <span className="relative px-3 py-0.5 rounded-full bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] text-[11px] font-semibold text-muted-foreground shadow-xs">
                         {m.dividerText || "Today"}
                       </span>
                     </div>
@@ -749,7 +749,7 @@ export function MessagesPage() {
                           className={`p-3 sm:px-4 sm:py-2.5 rounded-2xl text-xs leading-relaxed ${
                             isMe
                               ? "bg-blue-600 text-white rounded-tr-xs shadow-xs"
-                              : "bg-muted/40 text-foreground border border-border/70 rounded-tl-xs"
+                              : "bg-white dark:bg-[#242428] text-foreground border border-[#E7E7EC] dark:border-[#323238] rounded-tl-xs shadow-xs"
                           }`}
                         >
                           <p className="whitespace-pre-wrap">{m.text}</p>
@@ -760,7 +760,7 @@ export function MessagesPage() {
                       {m.attachments?.map((att) => (
                         <div
                           key={att.id}
-                          className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border/80 shadow-xs max-w-sm"
+                          className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] shadow-xs max-w-sm"
                         >
                           <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 grid place-items-center font-bold text-xs uppercase shrink-0">
                             {att.extension || "FIG"}
@@ -774,7 +774,7 @@ export function MessagesPage() {
                           <button
                             type="button"
                             onClick={() => toast.success(`Downloaded ${att.name}`)}
-                            className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            className="p-2 rounded-xl hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                             title="Download file"
                           >
                             <Download className="w-4 h-4" />
@@ -788,7 +788,7 @@ export function MessagesPage() {
                           className={`flex items-center gap-3 p-2.5 sm:px-3 sm:py-2 rounded-2xl border ${
                             isMe
                               ? "bg-blue-600/15 border-blue-500/30 text-foreground"
-                              : "bg-muted/50 border-border/70 text-foreground"
+                              : "bg-white dark:bg-[#242428] border-[#E7E7EC] dark:border-[#323238] text-foreground shadow-xs"
                           }`}
                         >
                           <button
@@ -848,7 +848,7 @@ export function MessagesPage() {
                               key={i}
                               type="button"
                               onClick={() => handleAddReaction(m.id, r.emoji)}
-                              className="px-2 py-0.5 rounded-full bg-muted/60 hover:bg-muted border border-border/60 text-xs flex items-center gap-1 transition-all cursor-pointer"
+                              className="px-2 py-0.5 rounded-full bg-white dark:bg-[#242428] hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c] border border-[#E7E7EC] dark:border-[#323238] text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs"
                             >
                               <span>{r.emoji}</span>
                               <span className="text-[10px] font-semibold text-muted-foreground">
@@ -867,8 +867,8 @@ export function MessagesPage() {
             </div>
 
             {/* Chat Input Bar Footer */}
-            <div className="p-3 sm:p-4 border-t border-border/70 bg-card">
-              <div className="rounded-2xl border border-border/80 bg-background/80 p-2 focus-within:ring-1 focus-within:ring-foreground transition-all">
+            <div className="p-3 sm:p-4 border-t border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428]">
+              <div className="rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] p-2 focus-within:ring-1 focus-within:ring-foreground transition-all">
                 {/* Textarea / Input */}
                 <input
                   type="text"
@@ -885,7 +885,7 @@ export function MessagesPage() {
                 />
 
                 {/* Input Action Controls Footer Bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-border/50 mt-1">
+                <div className="flex items-center justify-between pt-2 border-t border-[#E7E7EC] dark:border-[#323238] mt-1">
                   {/* Left Action Buttons: +, Emoji, File, Image, Link, Voice */}
                   <div className="flex items-center gap-1 sm:gap-1.5">
                     {/* Hidden file input */}
@@ -900,7 +900,7 @@ export function MessagesPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-lg hover:bg-[#EAEAEF] dark:hover:bg-[#25252a] text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
                       title="Attach file"
                     >
                       <Plus className="w-4 h-4" />
@@ -911,7 +911,7 @@ export function MessagesPage() {
                       <button
                         type="button"
                         onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-                        className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
+                        className="w-7 h-7 rounded-lg hover:bg-[#EAEAEF] dark:hover:bg-[#25252a] text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
                         title="Add emoji"
                       >
                         <Smile className="w-4 h-4" />
@@ -919,7 +919,7 @@ export function MessagesPage() {
 
                       {/* Emoji Palette Popover */}
                       {isEmojiPickerOpen && (
-                        <div className="absolute left-0 bottom-9 p-2 bg-card border border-border/90 rounded-2xl shadow-xl z-20 grid grid-cols-6 gap-1 w-52">
+                        <div className="absolute left-0 bottom-9 p-2 bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-2xl shadow-xl z-20 grid grid-cols-6 gap-1 w-52">
                           {[
                             "👍",
                             "❤️",
@@ -941,7 +941,7 @@ export function MessagesPage() {
                                 setInputText((prev) => prev + emoji);
                                 setIsEmojiPickerOpen(false);
                               }}
-                              className="w-7 h-7 hover:bg-muted rounded-lg text-sm grid place-items-center cursor-pointer transition-colors"
+                              className="w-7 h-7 hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c] rounded-lg text-sm grid place-items-center cursor-pointer transition-colors"
                             >
                               {emoji}
                             </button>
@@ -954,7 +954,7 @@ export function MessagesPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-lg hover:bg-[#EAEAEF] dark:hover:bg-[#25252a] text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
                       title="Attach document"
                     >
                       <Paperclip className="w-4 h-4" />
@@ -964,7 +964,7 @@ export function MessagesPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-lg hover:bg-[#EAEAEF] dark:hover:bg-[#25252a] text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
                       title="Attach photo/image"
                     >
                       <ImageIcon className="w-4 h-4" />
@@ -979,7 +979,7 @@ export function MessagesPage() {
                           setInputText((prev) => prev + (prev ? " " : "") + url);
                         }
                       }}
-                      className="w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-lg hover:bg-[#EAEAEF] dark:hover:bg-[#25252a] text-muted-foreground hover:text-foreground grid place-items-center transition-colors cursor-pointer"
                       title="Add link"
                     >
                       <LinkIcon className="w-3.5 h-3.5" />
