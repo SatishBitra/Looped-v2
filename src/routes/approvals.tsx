@@ -787,13 +787,19 @@ function ApprovalsPage() {
                             </div>
                           </div>
                         </div>
+                      </div>
 
-                        {/* Direct Asset Actions */}
-                        <div className="flex items-center gap-1 shrink-0">
+                      {/* Secondary Reference Link / Deliverable Actions replacing Open Link text */}
+                      <div className="pt-2 border-t border-[#E7E7EC]/70 dark:border-[#323238]/70 flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5 text-muted-foreground truncate min-w-0">
+                          <LinkIcon className="w-3 h-3 text-blue-500 shrink-0" />
+                          <span className="truncate">{q.secondaryLink?.name || q.fileName}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
                           <button
                             type="button"
                             onClick={() => setSelectedPreview(q)}
-                            className="p-1.5 rounded-lg border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-muted-foreground hover:text-foreground hover:border-[#A8A8A8] transition-colors cursor-pointer"
                             title="Inspect Deliverable & Notes"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -801,32 +807,13 @@ function ApprovalsPage() {
                           <button
                             type="button"
                             onClick={() => toast.success(`Downloading ${q.fileName}...`)}
-                            className="p-1.5 rounded-lg border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-muted-foreground hover:text-foreground hover:border-[#A8A8A8] transition-colors cursor-pointer"
                             title="Download File"
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
-
-                      {/* Secondary Reference Link if provided */}
-                      {q.secondaryLink && (
-                        <div className="pt-2 border-t border-[#E7E7EC]/70 dark:border-[#323238]/70 flex items-center justify-between text-[11px]">
-                          <div className="flex items-center gap-1.5 text-muted-foreground truncate">
-                            <LinkIcon className="w-3 h-3 text-blue-500 shrink-0" />
-                            <span className="truncate">{q.secondaryLink.name}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              toast.info(`Opening reference link: ${q.secondaryLink?.name}`)
-                            }
-                            className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline shrink-0 ml-2 cursor-pointer"
-                          >
-                            Open Link
-                          </button>
-                        </div>
-                      )}
                     </div>
 
                     {/* Requester Profile & Due Date Metadata */}
@@ -897,24 +884,14 @@ function ApprovalsPage() {
                           Changes Needed
                         </div>
                       ) : (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(q.id, q.title)}
-                            className="h-8 px-3 rounded-xl border border-rose-200 bg-rose-50/80 text-rose-700 hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-900/40 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                          >
-                            <X className="w-3.5 h-3.5" strokeWidth={2.5} />
-                            <span>Reject</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(q.id, q.title)}
-                            className="h-8 px-3.5 rounded-xl bg-foreground text-background text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-xs"
-                          >
-                            <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
-                            <span>Approve</span>
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(q.id, q.title)}
+                          className="h-8 px-3.5 rounded-xl bg-foreground text-background text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          <span>Approve</span>
+                        </button>
                       )}
                     </div>
                   </div>

@@ -1,4 +1,6 @@
 import "./lib/error-capture";
+import "../instrument.server.mjs";
+import * as Sentry from "@sentry/tanstackstart-react";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
@@ -51,6 +53,7 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
+      Sentry.captureException(error);
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,

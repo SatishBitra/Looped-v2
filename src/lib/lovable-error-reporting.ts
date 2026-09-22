@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/tanstackstart-react";
+
 type LovableErrorOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
@@ -25,6 +27,16 @@ declare global {
 
 export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+
+  try {
+    Sentry.captureException(error, {
+      extra: context,
+      tags: { source: "react_error_boundary" },
+    });
+  } catch {
+    // Sentry capture fallback
+  }
+
   window.__lovableEvents?.captureException?.(
     error,
     {
