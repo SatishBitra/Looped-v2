@@ -27,12 +27,16 @@ export function EventDetailModal({ event, onClose, onEdit, onDelete }: EventDeta
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm cursor-pointer"
+        onClick={onClose}
+      >
         <motion.div
+          onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-md bg-card border border-border/90 rounded-[28px] p-6 shadow-2xl overflow-hidden"
+          className="relative w-full max-w-md bg-card border border-border/90 rounded-[28px] p-6 shadow-2xl overflow-hidden cursor-default"
         >
           {/* Header pill & close */}
           <div className="flex items-center justify-between pb-3 border-b border-border/60">

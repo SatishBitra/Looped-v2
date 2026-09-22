@@ -29,7 +29,10 @@ import {
   Paperclip,
   Send,
   ArrowLeft,
+  RefreshCw,
+  ChevronRight,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useState,
   useEffect,
@@ -490,17 +493,226 @@ function TopNav({
     toast.success("Inbox marked as read");
   };
 
+  // Card Notifications State (matching redesign image.png)
+  const [cardNotifications, setCardNotifications] = useState([
+    {
+      id: "card_notif_1",
+      task: "User Interface",
+      time: "Tomorrow",
+      timeTone: "amber" as const,
+      status: "Incoming" as const,
+      description: "Showcasing new design elements and styles.",
+      collaborators: [
+        {
+          name: "Miguel",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Jhon",
+          avatar:
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Hane",
+          avatar:
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+        },
+      ],
+      actionPrompt: "Collaborate with",
+      unread: true,
+    },
+    {
+      id: "card_notif_2",
+      task: "Design System V.2",
+      time: "Today",
+      timeTone: "rose" as const,
+      status: "Ongoing" as const,
+      description: "Key components of a design system (e.g., UI components, guidelines, tokens).",
+      collaborators: [
+        {
+          name: "Miguel",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Jhon",
+          avatar:
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Hane",
+          avatar:
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+        },
+      ],
+      actionPrompt: "Collaborate with",
+      unread: true,
+    },
+    {
+      id: "card_notif_3",
+      task: "Typography Styles",
+      time: "Yesterday",
+      timeTone: "slate" as const,
+      status: "Past" as const,
+      description: "Discussing font choices and hierarchy.",
+      collaborators: [
+        {
+          name: "Miguel",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Angel",
+          avatar:
+            "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Hane",
+          avatar:
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+        },
+      ],
+      actionPrompt: "Collaborate with",
+      unread: false,
+    },
+    {
+      id: "card_notif_4",
+      task: "Typography Styles",
+      time: "Dec 18",
+      timeTone: "slate" as const,
+      status: "Past" as const,
+      description: "Discussing font choices and hierarchy.",
+      collaborators: [
+        {
+          name: "Marta",
+          avatar:
+            "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Luca",
+          avatar:
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
+        },
+        {
+          name: "Sandy",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+        },
+      ],
+      actionPrompt: "Approve color palette",
+      unread: false,
+    },
+  ]);
+
+  const [taskFilter, setTaskFilter] = useState("All");
+  const [timeFilter, setTimeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [activeFilterDropdown, setActiveFilterDropdown] = useState<
+    "task" | "time" | "status" | null
+  >(null);
+  const [isNotifLoading, setIsNotifLoading] = useState(false);
+
+  const filteredCardNotifs = useMemo(() => {
+    return cardNotifications.filter((item) => {
+      if (taskFilter !== "All" && item.task !== taskFilter) return false;
+      if (timeFilter !== "All" && item.time !== timeFilter) return false;
+      if (statusFilter !== "All" && item.status !== statusFilter) return false;
+      return true;
+    });
+  }, [cardNotifications, taskFilter, timeFilter, statusFilter]);
+
+  const cardUnreadCount = useMemo(() => {
+    return cardNotifications.filter((n) => n.unread).length;
+  }, [cardNotifications]);
+
+  const handleRefreshNotifs = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsNotifLoading(true);
+    setTimeout(() => {
+      setIsNotifLoading(false);
+      toast.success("Notifications refreshed");
+    }, 600);
+  };
+
+  const handleMarkAllCardNotifsRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCardNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    toast.success("All notifications marked as read");
+  };
+
+  const handleSelectFilter = (type: "task" | "time" | "status", value: string) => {
+    setActiveFilterDropdown(null);
+    if (type === "task") setTaskFilter(value);
+    if (type === "time") setTimeFilter(value);
+    if (type === "status") setStatusFilter(value);
+
+    // Briefly trigger skeleton loading on filter change to give reactive feedback
+    setIsNotifLoading(true);
+    setTimeout(() => setIsNotifLoading(false), 350);
+  };
+
+  // Close drop cards on any canvas click outside or Escape key
+  useEffect(() => {
+    function handleGlobalCanvasClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (
+        isNotifPopoverOpen &&
+        !target.closest("#notif-popover-container") &&
+        !target.closest("#notif-bell-trigger")
+      ) {
+        setIsNotifPopoverOpen(false);
+        setActiveFilterDropdown(null);
+      }
+      if (
+        isMessagesPopoverOpen &&
+        !target.closest("#messages-popover-container") &&
+        !target.closest("#messages-popover-trigger")
+      ) {
+        setIsMessagesPopoverOpen(false);
+      }
+      if (
+        isProfilePopoverOpen &&
+        !target.closest("#profile-popover-container") &&
+        !target.closest("#profile-trigger")
+      ) {
+        setIsProfilePopoverOpen(false);
+        setIsStatusDropdownOpen(false);
+      }
+    }
+
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setIsNotifPopoverOpen(false);
+        setIsMessagesPopoverOpen(false);
+        setIsProfilePopoverOpen(false);
+        setIsStatusDropdownOpen(false);
+        setActiveFilterDropdown(null);
+      }
+    }
+
+    if (isNotifPopoverOpen || isMessagesPopoverOpen || isProfilePopoverOpen) {
+      document.addEventListener("mousedown", handleGlobalCanvasClick);
+      document.addEventListener("keydown", handleGlobalKeyDown);
+      return () => {
+        document.removeEventListener("mousedown", handleGlobalCanvasClick);
+        document.removeEventListener("keydown", handleGlobalKeyDown);
+      };
+    }
+  }, [isNotifPopoverOpen, isMessagesPopoverOpen, isProfilePopoverOpen]);
+
   return (
     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-[#E7E7EC] dark:border-[#323238] pb-6 mb-8 select-none relative z-30">
-      {/* Invisible backdrop to dismiss popovers */}
+      {/* Invisible backdrop to dismiss popovers when clicking on canvas */}
       {(isNotifPopoverOpen || isProfilePopoverOpen || isMessagesPopoverOpen) && (
         <div
-          className="fixed inset-0 z-40 bg-transparent"
+          className="fixed inset-0 z-40 bg-transparent cursor-default"
           onClick={() => {
             setIsNotifPopoverOpen(false);
             setIsProfilePopoverOpen(false);
             setIsStatusDropdownOpen(false);
             setIsMessagesPopoverOpen(false);
+            setActiveFilterDropdown(null);
           }}
         />
       )}
@@ -590,6 +802,7 @@ function TopNav({
               <AnimatePresence>
                 {isMessagesPopoverOpen && (
                   <motion.div
+                    id="messages-popover-container"
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -783,20 +996,27 @@ function TopNav({
               <button
                 id="notif-bell-trigger"
                 onClick={() => {
-                  setIsNotifPopoverOpen(!isNotifPopoverOpen);
+                  const nextState = !isNotifPopoverOpen;
+                  setIsNotifPopoverOpen(nextState);
                   setIsProfilePopoverOpen(false);
                   setIsMessagesPopoverOpen(false);
+                  setActiveFilterDropdown(null);
+                  if (nextState) {
+                    setIsNotifLoading(true);
+                    setTimeout(() => setIsNotifLoading(false), 380);
+                  }
                 }}
-                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative ${
+                className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:text-[#111111] dark:hover:text-white hover:border-[#A8A8A8] transition-all relative cursor-pointer ${
                   isNotifPopoverOpen
                     ? "text-[#111111] dark:text-white border-[#A8A8A8]"
                     : "text-[#757575]"
                 }`}
+                title="Notifications"
               >
                 <Bell className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                {inboxUnreadCount > 0 && (
+                {cardUnreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#E4664F] text-white rounded-full flex items-center justify-center text-[9px] font-bold border border-white dark:border-[#242428]">
-                    {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                    {cardUnreadCount}
                   </span>
                 )}
               </button>
@@ -804,223 +1024,357 @@ function TopNav({
               <AnimatePresence>
                 {isNotifPopoverOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    id="notif-popover-container"
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-12 w-[340px] sm:w-[385px] bg-gradient-to-b from-white/95 via-white/90 to-white/80 dark:from-[#1c1c1f]/95 dark:via-[#1c1c1f]/90 dark:to-[#18181b]/80 backdrop-blur-[24px] border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden text-left"
+                    className="absolute right-0 top-12 w-[340px] sm:w-[420px] bg-white dark:bg-[#1E1E22] rounded-3xl border border-[#E7E7EC] dark:border-[#323238] shadow-2xl z-50 overflow-hidden text-left flex flex-col"
                   >
-                    {/* Popover Header */}
-                    <div className="p-4 pb-2 flex items-center justify-between text-left">
-                      <span className="font-extrabold text-[15px] text-foreground">
-                        Notifications
-                      </span>
-                      <button
-                        onClick={handleMarkAllRead}
-                        className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Mark all as read
-                      </button>
-                    </div>
-
-                    {/* Popover Tabs Header */}
-                    <div className="flex items-center justify-between px-4 border-b border-border bg-slate-50/40 dark:bg-slate-900/10">
-                      <div className="flex gap-4">
-                        {/* Inbox Tab */}
-                        <button
-                          onClick={() => setSelectedNotifTab("inbox")}
-                          className={`relative py-3.5 text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            selectedNotifTab === "inbox"
-                              ? "text-foreground border-b-2 border-foreground dark:border-white"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <span>Inbox</span>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-all ${
-                              selectedNotifTab === "inbox"
-                                ? "bg-[#111111] text-white dark:bg-white dark:text-[#111111]"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {inboxUnreadCount}
+                    {/* Header Row: Title + Unread Count Badge + Action Group */}
+                    <div className="p-4 pb-3 flex items-center justify-between border-b border-[#E7E7EC]/80 dark:border-[#323238]/80 bg-white dark:bg-[#1E1E22]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-base text-foreground tracking-tight">
+                          Notifications
+                        </span>
+                        {cardUnreadCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-foreground text-background">
+                            {cardUnreadCount} new
                           </span>
-                        </button>
-
-                        {/* General Tab */}
-                        <button
-                          onClick={() => setSelectedNotifTab("general")}
-                          className={`relative py-3.5 text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            selectedNotifTab === "general"
-                              ? "text-foreground border-b-2 border-foreground dark:border-white"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <span>General</span>
-                          <span className="text-[10px] px-2 py-0.5 border border-border rounded-full font-bold text-muted-foreground bg-muted/30">
-                            {generalUnreadCount}
-                          </span>
-                        </button>
-
-                        {/* Archived Tab */}
-                        <button
-                          onClick={() => setSelectedNotifTab("archived")}
-                          className={`relative py-3.5 text-xs font-bold transition-all ${
-                            selectedNotifTab === "archived"
-                              ? "text-foreground border-b-2 border-foreground dark:border-white"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          Archived
-                        </button>
+                        )}
                       </div>
 
-                      {/* Settings Cog */}
-                      <Link
-                        to="/settings"
-                        onClick={() => setIsNotifPopoverOpen(false)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all"
-                        title="Notification Settings"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Link>
+                      <div className="flex items-center gap-1">
+                        {/* Refresh Button with Skeleton loading preview */}
+                        <button
+                          type="button"
+                          onClick={handleRefreshNotifs}
+                          title="Refresh notifications"
+                          className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#2A2A30] transition-colors cursor-pointer"
+                        >
+                          <RefreshCw
+                            className={`w-3.5 h-3.5 ${isNotifLoading ? "animate-spin text-foreground" : ""}`}
+                          />
+                        </button>
+
+                        {/* Mark all as read */}
+                        <button
+                          type="button"
+                          onClick={handleMarkAllCardNotifsRead}
+                          className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground rounded-xl hover:bg-[#F4F4F7] dark:hover:bg-[#2A2A30] transition-colors cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
+
+                        {/* Settings gear link */}
+                        <Link
+                          to="/settings"
+                          onClick={() => setIsNotifPopoverOpen(false)}
+                          className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#2A2A30] transition-colors cursor-pointer"
+                          title="Notification Settings"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                        </Link>
+
+                        {/* Close button */}
+                        <button
+                          type="button"
+                          onClick={() => setIsNotifPopoverOpen(false)}
+                          className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#2A2A30] transition-colors cursor-pointer"
+                          title="Close"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Popover List */}
-                    <div className="max-h-[350px] overflow-y-auto divide-y divide-border/60 scrollbar-thin">
-                      {filteredNotifs.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground flex flex-col items-center">
-                          <CheckCircle2 className="w-8 h-8 text-[#33A579] mb-2 opacity-60" />
-                          <p className="text-xs font-semibold">No alerts in this folder</p>
+                    {/* Filter Pills Row (matching image.png): Task: All | Time: All | Status: All */}
+                    <div className="px-4 py-2.5 bg-[#F9F9FB] dark:bg-[#18181B] border-b border-[#E7E7EC]/70 dark:border-[#323238]/70 flex items-center gap-2 relative">
+                      {/* Task Filter */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveFilterDropdown(
+                              activeFilterDropdown === "task" ? null : "task",
+                            );
+                          }}
+                          className={`h-7 px-2.5 rounded-xl border text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                            taskFilter !== "All"
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-foreground hover:border-foreground/40"
+                          }`}
+                        >
+                          <span>Task: {taskFilter}</span>
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+
+                        {activeFilterDropdown === "task" && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute left-0 top-8 w-44 bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-2xl shadow-xl z-30 py-1.5"
+                          >
+                            {[
+                              "All",
+                              "User Interface",
+                              "Design System V.2",
+                              "Typography Styles",
+                            ].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => handleSelectFilter("task", opt)}
+                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between ${
+                                  taskFilter === opt
+                                    ? "font-bold text-foreground bg-[#F4F4F7] dark:bg-[#2F2F36]"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-[#F8F8FA] dark:hover:bg-[#28282E]"
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {taskFilter === opt && <Check className="w-3 h-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Time Filter */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveFilterDropdown(
+                              activeFilterDropdown === "time" ? null : "time",
+                            );
+                          }}
+                          className={`h-7 px-2.5 rounded-xl border text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                            timeFilter !== "All"
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-foreground hover:border-foreground/40"
+                          }`}
+                        >
+                          <span>Time: {timeFilter}</span>
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+
+                        {activeFilterDropdown === "time" && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute left-0 top-8 w-36 bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-2xl shadow-xl z-30 py-1.5"
+                          >
+                            {["All", "Tomorrow", "Today", "Yesterday", "Dec 18"].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => handleSelectFilter("time", opt)}
+                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between ${
+                                  timeFilter === opt
+                                    ? "font-bold text-foreground bg-[#F4F4F7] dark:bg-[#2F2F36]"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-[#F8F8FA] dark:hover:bg-[#28282E]"
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {timeFilter === opt && <Check className="w-3 h-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status Filter */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveFilterDropdown(
+                              activeFilterDropdown === "status" ? null : "status",
+                            );
+                          }}
+                          className={`h-7 px-2.5 rounded-xl border text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                            statusFilter !== "All"
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-foreground hover:border-foreground/40"
+                          }`}
+                        >
+                          <span>Status: {statusFilter}</span>
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+
+                        {activeFilterDropdown === "status" && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute left-0 top-8 w-36 bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-2xl shadow-xl z-30 py-1.5"
+                          >
+                            {["All", "Incoming", "Ongoing", "Past"].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => handleSelectFilter("status", opt)}
+                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between ${
+                                  statusFilter === opt
+                                    ? "font-bold text-foreground bg-[#F4F4F7] dark:bg-[#2F2F36]"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-[#F8F8FA] dark:hover:bg-[#28282E]"
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {statusFilter === opt && <Check className="w-3 h-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Scrollable Notification Cards Body */}
+                    <div className="max-h-[380px] overflow-y-auto p-3 space-y-2.5 scrollbar-thin">
+                      {isNotifLoading ? (
+                        /* Skeleton Loading Feature before and during data fetching */
+                        Array.from({ length: 3 }).map((_, idx) => (
+                          <div
+                            key={`skel-notif-${idx}`}
+                            className="p-3.5 rounded-2xl bg-[#FDFDFD] dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] space-y-2.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Skeleton className="h-4 w-28 rounded-md" />
+                                <Skeleton className="h-4 w-16 rounded-md" />
+                                <Skeleton className="h-4 w-16 rounded-md" />
+                              </div>
+                              <Skeleton className="w-3.5 h-3.5 rounded-md" />
+                            </div>
+                            <Skeleton className="h-3 w-4/5 rounded-md" />
+                            <div className="pt-2 border-t border-[#E7E7EC]/60 dark:border-[#323238]/60 flex items-center gap-2">
+                              <div className="flex -space-x-1.5">
+                                <Skeleton className="w-5 h-5 rounded-full" />
+                                <Skeleton className="w-5 h-5 rounded-full" />
+                                <Skeleton className="w-5 h-5 rounded-full" />
+                              </div>
+                              <Skeleton className="h-3 w-36 rounded-md" />
+                            </div>
+                          </div>
+                        ))
+                      ) : filteredCardNotifs.length === 0 ? (
+                        <div className="py-8 text-center text-muted-foreground flex flex-col items-center">
+                          <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2 opacity-70" />
+                          <p className="text-xs font-semibold">
+                            No notifications match this filter
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTaskFilter("All");
+                              setTimeFilter("All");
+                              setStatusFilter("All");
+                            }}
+                            className="mt-2 text-[11px] text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                          >
+                            Reset filters
+                          </button>
                         </div>
                       ) : (
-                        filteredNotifs.map((n) => (
+                        filteredCardNotifs.map((item) => (
                           <div
-                            key={n.id}
-                            onClick={() => handleNotifItemClick(n.id)}
-                            className={`p-3.5 hover:bg-accent/40 transition-colors cursor-pointer text-left flex gap-3 relative ${
-                              n.status === "unread" ? "bg-[#5A82E8]/5 dark:bg-[#5A82E8]/10" : ""
-                            }`}
+                            key={item.id}
+                            onClick={() => {
+                              setCardNotifications((prev) =>
+                                prev.map((c) => (c.id === item.id ? { ...c, unread: false } : c)),
+                              );
+                              toast.info(`Opening ${item.task} task view`);
+                            }}
+                            className="p-3.5 rounded-2xl bg-white dark:bg-[#242428] hover:bg-[#F8F8FA] dark:hover:bg-[#2A2A30] border border-[#E7E7EC] dark:border-[#323238] transition-all cursor-pointer shadow-xs hover:border-foreground/30 group text-left"
                           >
-                            {/* Avatar with Presence dot */}
-                            <div className="relative shrink-0 mt-0.5">
-                              {n.senderAvatar ? (
-                                <img
-                                  src={n.senderAvatar}
-                                  alt={n.senderName}
-                                  className="w-10 h-10 rounded-full object-cover border border-border/80"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-[#5A82E8]/10 text-[#5A82E8] grid place-items-center text-xs font-extrabold font-mono border border-border">
-                                  {n.senderName.slice(0, 2).toUpperCase()}
-                                </div>
-                              )}
-                              {n.senderPresence !== "none" && (
+                            {/* Top row: Title + Time Pill + Status Pill + Chevron Right */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                                <span className="text-sm font-bold text-foreground truncate">
+                                  {item.task}
+                                </span>
+
+                                {/* Time Pill */}
                                 <span
-                                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                                    n.senderPresence === "online"
-                                      ? "bg-[#33A579]"
-                                      : n.senderPresence === "busy"
-                                        ? "bg-[#E4664F]"
-                                        : "bg-[#F1C40F]"
+                                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-tight whitespace-nowrap ${
+                                    item.timeTone === "amber"
+                                      ? "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300"
+                                      : item.timeTone === "rose"
+                                        ? "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-300"
+                                        : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                   }`}
+                                >
+                                  {item.time}
+                                </span>
+
+                                {/* Status Pill */}
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-tight whitespace-nowrap ${
+                                    item.status === "Incoming"
+                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                      : item.status === "Ongoing"
+                                        ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300"
+                                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                  }`}
+                                >
+                                  {item.status}
+                                </span>
+                              </div>
+
+                              <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-foreground group-hover:translate-x-0.5 transition-all shrink-0" />
+                            </div>
+
+                            {/* Middle row: Description */}
+                            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                              {item.description}
+                            </p>
+
+                            {/* Bottom row: Collaborators Stack & Prompt */}
+                            <div className="mt-2.5 pt-2 border-t border-[#E7E7EC]/60 dark:border-[#323238]/60 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {/* Overlapping Avatar Stack */}
+                                <div className="flex -space-x-1.5 shrink-0 overflow-hidden">
+                                  {item.collaborators.map((c, i) => (
+                                    <img
+                                      key={i}
+                                      src={c.avatar}
+                                      alt={c.name}
+                                      className="w-5 h-5 rounded-full ring-1.5 ring-white dark:ring-[#242428] object-cover"
+                                    />
+                                  ))}
+                                </div>
+
+                                {/* Context Action Text */}
+                                <span className="text-[11px] text-muted-foreground truncate">
+                                  {item.actionPrompt}{" "}
+                                  <strong className="text-foreground font-semibold">
+                                    {item.collaborators.map((c) => c.name).join(", ")}
+                                  </strong>
+                                </span>
+                              </div>
+
+                              {item.unread && (
+                                <span
+                                  className="w-2 h-2 rounded-full bg-blue-600 shrink-0"
+                                  title="Unread"
                                 />
                               )}
                             </div>
-
-                            {/* Content body */}
-                            <div className="flex-1 min-w-0 pr-4">
-                              <div className="text-[13px] text-foreground leading-normal font-normal">
-                                <span className="font-bold text-foreground hover:underline mr-1">
-                                  {n.senderName}
-                                </span>
-                                <span className="text-muted-foreground mr-1">{n.actionText}</span>
-                                <span className="font-bold text-foreground hover:underline">
-                                  {n.targetText}
-                                </span>
-                              </div>
-
-                              <div className="text-[11px] text-muted-foreground mt-0.5 font-semibold flex items-center gap-1">
-                                <span>{n.timeText}</span>
-                                <span>•</span>
-                                <span className="hover:underline cursor-pointer">
-                                  {n.groupText}
-                                </span>
-                              </div>
-
-                              {/* CTA Actions */}
-                              {n.hasActions && (
-                                <div
-                                  className="flex items-center gap-2 mt-2"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <button
-                                    onClick={() => {
-                                      toast.error("Declined request");
-                                      setPopoverNotifs((prev) =>
-                                        prev.map((item) =>
-                                          item.id === n.id ? { ...item, hasActions: false } : item,
-                                        ),
-                                      );
-                                    }}
-                                    className="px-3 py-1.5 bg-card hover:bg-accent border border-border text-xs font-bold rounded-xl transition-all"
-                                  >
-                                    Decline
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      toast.success("Accepted request successfully!");
-                                      setPopoverNotifs((prev) =>
-                                        prev.map((item) =>
-                                          item.id === n.id ? { ...item, hasActions: false } : item,
-                                        ),
-                                      );
-                                    }}
-                                    className="px-3.5 py-1.5 bg-[#7000FF] hover:bg-[#6000E0] text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                                  >
-                                    Accept
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Attachments */}
-                              {n.attachmentName && (
-                                <div
-                                  className="flex items-center gap-1.5 mt-2 p-1.5 rounded-lg border border-border/80 bg-accent/20 hover:bg-accent/40 w-fit cursor-pointer transition-all"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toast.success(`Downloading ${n.attachmentName}...`);
-                                  }}
-                                >
-                                  <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
-                                  <span className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-                                    {n.attachmentName}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Unread black/white dot on the far right */}
-                            {n.status === "unread" && (
-                              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                                <span className="w-2 h-2 rounded-full bg-[#111111] dark:bg-white" />
-                              </div>
-                            )}
                           </div>
                         ))
                       )}
                     </div>
 
-                    {/* Popover Footer with Action CTA */}
-                    <div className="border-t border-[#E7E7EC] dark:border-[#323238] p-3 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-center">
+                    {/* Popover Footer */}
+                    <div className="p-3 border-t border-[#E7E7EC] dark:border-[#323238] bg-[#F8F8FA]/60 dark:bg-[#18181A]/60 flex items-center justify-center">
                       <button
+                        type="button"
                         onClick={() => {
                           setIsNotifPopoverOpen(false);
-                          onOpenModal?.("notifications");
+                          navigate({ to: "/notifications" });
                         }}
-                        className="w-full h-10 rounded-xl bg-[#111111] dark:bg-white text-white dark:text-[#111111] hover:opacity-90 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        className="w-full h-9 rounded-xl bg-foreground text-background font-semibold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                       >
-                        <span>View Full Feed</span>
+                        <span>View all notifications</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -1033,13 +1387,14 @@ function TopNav({
           {/* Profile Badge Button & Popover container */}
           <div className="relative">
             <button
+              id="profile-trigger"
               onClick={() => {
                 setIsProfilePopoverOpen(!isProfilePopoverOpen);
                 setIsNotifPopoverOpen(false);
                 setIsMessagesPopoverOpen(false);
                 setIsStatusDropdownOpen(false);
               }}
-              className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:border-[#A8A8A8] transition-all relative ${
+              className={`h-10 w-10 rounded-[18px] bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] grid place-items-center hover:border-[#A8A8A8] transition-all relative cursor-pointer ${
                 isProfilePopoverOpen ? "border-[#A8A8A8]" : ""
               }`}
             >
@@ -1054,6 +1409,7 @@ function TopNav({
             <AnimatePresence>
               {isProfilePopoverOpen && (
                 <motion.div
+                  id="profile-popover-container"
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}

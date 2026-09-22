@@ -92,6 +92,20 @@ export function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close sort dropdown when clicking on canvas/outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
+        setIsSortDropdownOpen(false);
+      }
+    };
+    if (isSortDropdownOpen) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isSortDropdownOpen]);
 
   const activeThread = useMemo(() => {
     return threads.find((t) => t.id === selectedThreadId) || threads[0];
@@ -419,7 +433,7 @@ export function MessagesPage() {
               </div>
 
               {/* Sort dropdown */}
-              <div className="relative">
+              <div className="relative" ref={sortDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
