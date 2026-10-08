@@ -215,13 +215,14 @@ function TopNav({
   );
   const [presenceStatus, setPresenceStatus] = useState<
     "Online" | "Busy" | "In Meeting" | "Focus Time" | "Away" | "Offline"
-  >(() => {
+  >("Online");
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("employee_presence_status");
-      if (saved) return saved as any;
+      if (saved) setPresenceStatus(saved as any);
     }
-    return "Online";
-  });
+  }, []);
 
   const handleStatusChange = (
     status: "Online" | "Busy" | "In Meeting" | "Focus Time" | "Away" | "Offline",

@@ -279,31 +279,44 @@ function EmployeeDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Active Capacity Countdown Timer State & Session
-  const [activeTimer, setActiveTimer] = useState<ActiveTimerSession | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("looped_active_timer_session");
-        if (saved) return JSON.parse(saved);
-      } catch {
-        // Ignore JSON error
-      }
-    }
-    return null;
-  });
+  const [activeTimer, setActiveTimer] = useState<ActiveTimerSession | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Switch task confirmation modal state
   const [pendingSwitchTask, setPendingSwitchTask] = useState<Task | null>(null);
   const [isSwitchConfirmOpen, setIsSwitchConfirmOpen] = useState(false);
 
-  // Synchronize active timer session with localStorage
+  // Employee profile name
+  const [employeeProfileName, setEmployeeProfileName] = useState("Sandy K.");
+
+  // Client-side hydration recovery from localStorage
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    setIsMounted(true);
+    if (typeof window !== "undefined") {
+      try {
+        const savedTimer = localStorage.getItem("looped_active_timer_session");
+        if (savedTimer) {
+          setActiveTimer(JSON.parse(savedTimer));
+        }
+        const savedName = localStorage.getItem("looped_profile_name");
+        if (savedName && savedName.trim()) {
+          setEmployeeProfileName(savedName.trim());
+        }
+      } catch {
+        // Ignore JSON error
+      }
+    }
+  }, []);
+
+  // Synchronize active timer session with localStorage after mount
+  useEffect(() => {
+    if (!isMounted || typeof window === "undefined") return;
     if (activeTimer) {
       localStorage.setItem("looped_active_timer_session", JSON.stringify(activeTimer));
     } else {
       localStorage.removeItem("looped_active_timer_session");
     }
-  }, [activeTimer]);
+  }, [activeTimer, isMounted]);
 
   const isTimerRunning = Boolean(activeTimer?.isRunning && !activeTimer?.isPaused);
 
@@ -363,14 +376,6 @@ function EmployeeDashboardPage() {
     const timer = setInterval(() => setLiveDate(new Date()), 30000);
     return () => clearInterval(timer);
   }, []);
-
-  const [employeeProfileName, setEmployeeProfileName] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("looped_profile_name");
-      if (saved && saved.trim()) return saved.trim();
-    }
-    return "Sandy K.";
-  });
 
   useEffect(() => {
     const handleStorage = () => {
@@ -802,11 +807,14 @@ function EmployeeDashboardPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-[13px] font-medium tracking-normal text-[#757575] dark:text-[#A0A0A5] flex items-center gap-1.5 flex-wrap">
-                  <span className="font-semibold text-[#111111] dark:text-[#F4F4F7]">
+                  <span
+                    suppressHydrationWarning
+                    className="font-semibold text-[#111111] dark:text-[#F4F4F7]"
+                  >
                     {employeeShortName}
                   </span>
                   <span className="text-[#A8A8A8] dark:text-[#555]">•</span>
-                  <span>{liveDateFormatted}</span>
+                  <span suppressHydrationWarning>{liveDateFormatted}</span>
                 </span>
                 <span
                   className={`h-2 w-2 rounded-full ${
@@ -976,7 +984,8 @@ function EmployeeDashboardPage() {
                 ) : (
                   filteredTasks.map((task) => {
                     const leftInd = getStatusIndicator(task.status);
-                    const isThisTaskTimerActive = activeTimer && activeTimer.taskId === task.id;
+                    const isThisTaskTimerActive =
+                      isMounted && Boolean(activeTimer && activeTimer.taskId === task.id);
                     return (
                       <div
                         key={task.id}
@@ -1646,7 +1655,7 @@ function EmployeeDashboardPage() {
 
       {/* 3. Capacity Countdown Timer Modal (Replaces old form with clock timer animation & controls) */}
       <AnimatePresence>
-        {isLogTimeOpen && activeTimer && (
+        {isMounted && isLogTimeOpen && activeTimer && (
           <CapacityTimerModal
             isOpen={isLogTimeOpen}
             onClose={() => setIsLogTimeOpen(false)}
@@ -1661,7 +1670,7 @@ function EmployeeDashboardPage() {
 
       {/* 4. Switch Project Timer Confirmation Modal */}
       <AnimatePresence>
-        {isSwitchConfirmOpen && activeTimer && pendingSwitchTask && (
+        {isMounted && isSwitchConfirmOpen && activeTimer && pendingSwitchTask && (
           <SwitchTimerConfirmModal
             isOpen={isSwitchConfirmOpen}
             onClose={() => {
@@ -1678,7 +1687,7 @@ function EmployeeDashboardPage() {
 
       {/* 5. Persistent Floating Mini-Timer Bar (Shown when active timer is running in background) */}
       <AnimatePresence>
-        {activeTimer && !isLogTimeOpen && (
+        {isMounted && activeTimer && !isLogTimeOpen && (
           <FloatingTimerBar
             session={activeTimer}
             onOpenModal={() => setIsLogTimeOpen(true)}
