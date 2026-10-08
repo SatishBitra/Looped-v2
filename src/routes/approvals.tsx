@@ -6,7 +6,6 @@ import {
   X,
   MessageSquare,
   Search,
-  Clock,
   AlertCircle,
   FileText,
   Video,
@@ -14,6 +13,8 @@ import {
   CheckCircle2,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
+  Filter,
   Sparkles,
   Download,
   RefreshCw,
@@ -25,7 +26,7 @@ import {
   FileCode,
   FileSpreadsheet,
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -340,8 +341,21 @@ function ApprovalsPage() {
   const [activeFilter, setActiveFilter] = useState<
     "All" | "Pending" | "Overdue" | "Client review" | "Approved" | "Changes requested"
   >("All");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPreview, setSelectedPreview] = useState<ApprovalItem | null>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target as Node)) {
+        setIsFilterDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Feedback Popup State
   const [feedbackTarget, setFeedbackTarget] = useState<ApprovalItem | null>(null);
@@ -574,6 +588,103 @@ function ApprovalsPage() {
               />
             </div>
 
+            {/* Filter Dropdown Button Placed After Search Field */}
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                className={`h-9 px-3 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+                  activeFilter !== "All"
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] hover:bg-[#F4F4F7] dark:hover:bg-[#2c2c32] text-foreground"
+                }`}
+                title="Filter approvals queue"
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span>
+                  {activeFilter === "All"
+                    ? "Filter"
+                    : activeFilter === "Pending"
+                      ? "Needs action"
+                      : activeFilter === "Client review"
+                        ? "With client"
+                        : activeFilter}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${
+                    isFilterDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isFilterDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 sm:left-0 top-11 w-56 bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-2xl p-1.5 shadow-xl z-30"
+                  >
+                    {[
+                      { key: "All" as const, label: "All items", count: stats.total },
+                      {
+                        key: "Pending" as const,
+                        label: "Needs action",
+                        count: stats.waiting + stats.overdue,
+                      },
+                      {
+                        key: "Overdue" as const,
+                        label: "Overdue",
+                        count: stats.overdue,
+                        highlight: true,
+                      },
+                      {
+                        key: "Client review" as const,
+                        label: "With client",
+                        count: stats.clientReview,
+                      },
+                      { key: "Approved" as const, label: "Approved", count: stats.approved },
+                      { key: "Changes requested" as const, label: "Changes requested" },
+                    ].map((opt) => {
+                      const isSelected = activeFilter === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => {
+                            setActiveFilter(opt.key);
+                            setIsFilterDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-left transition-colors cursor-pointer ${
+                            isSelected
+                              ? "bg-accent font-semibold text-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{opt.label}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-foreground" />}
+                          </div>
+                          {opt.count !== undefined && (
+                            <span
+                              className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+                                opt.highlight && opt.count > 0
+                                  ? "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400"
+                                  : "bg-[#F4F4F7] dark:bg-[#1a1a1c] text-muted-foreground"
+                              }`}
+                            >
+                              {opt.count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button
               type="button"
               onClick={handleRefresh}
@@ -588,84 +699,46 @@ function ApprovalsPage() {
           </div>
         </div>
 
-        {/* Filter Tabs Bar: All | Pending | Overdue | Client Review | Approved | Changes Requested */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-[#E7E7EC] dark:border-[#323238]">
-          {(
-            [
-              { key: "All", label: "All items", count: stats.total },
-              { key: "Pending", label: "Needs action", count: stats.waiting + stats.overdue },
-              { key: "Overdue", label: "Overdue", count: stats.overdue, highlight: true },
-              { key: "Client review", label: "With client", count: stats.clientReview },
-              { key: "Approved", label: "Approved", count: stats.approved },
-              { key: "Changes requested", label: "Changes requested" },
-            ] as const
-          ).map((tab) => {
-            const isActive = activeFilter === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveFilter(tab.key)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
-                  isActive
-                    ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#2c2c32]"
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
-                      isActive
-                        ? "bg-white/20 dark:bg-black/20 text-white dark:text-black"
-                        : tab.highlight && tab.count > 0
-                          ? "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400"
-                          : "bg-[#F4F4F7] dark:bg-[#242428] text-muted-foreground"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
         {/* SKELETON LOADING STATE (Feature function before/during data fetching) */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 6 }).map((_, idx) => (
               <div
                 key={`skel-${idx}`}
-                className="p-5 rounded-3xl border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] shadow-xs flex flex-col justify-between space-y-4"
+                className="p-5 rounded-3xl border border-[#E7E7EC] dark:border-[#323238] bg-[#FAFAFC] dark:bg-[#242428] shadow-xs flex flex-col justify-between space-y-4"
               >
-                <div className="space-y-3">
-                  {/* Top metadata skeleton */}
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-4 w-28 rounded-md" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
+                <div className="space-y-3.5">
+                  {/* Title and Top Right Status Badge aligned skeleton */}
+                  <div className="flex items-center justify-between gap-3">
+                    <Skeleton className="h-5 w-3/5 rounded-md" />
+                    <Skeleton className="h-5 w-20 rounded-full shrink-0" />
                   </div>
-                  {/* Title skeleton */}
-                  <Skeleton className="h-5 w-3/4 rounded-md" />
 
-                  {/* File card skeleton */}
-                  <div className="p-3.5 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F8F8FA] dark:bg-[#1E1E22] space-y-2">
+                  {/* File card skeleton matching actual deliverable file & client attachment card */}
+                  <div className="p-3.5 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#1E1E22] space-y-2.5">
                     <div className="flex items-center gap-3">
                       <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
-                      <div className="space-y-1.5 flex-1">
+                      <div className="space-y-1.5 flex-1 min-w-0">
                         <Skeleton className="h-3.5 w-4/5 rounded-md" />
-                        <Skeleton className="h-3 w-1/2 rounded-md" />
+                        <Skeleton className="h-2.5 w-1/3 rounded-md" />
                       </div>
+                    </div>
+                    <div className="pt-2 border-t border-[#E7E7EC]/70 dark:border-[#323238]/70 flex items-center justify-between">
+                      <Skeleton className="h-3 w-28 rounded-md" />
+                      <Skeleton className="w-6 h-6 rounded-lg" />
                     </div>
                   </div>
 
-                  {/* Requester skeleton */}
+                  {/* Requester Profile & Due Date Metadata skeleton */}
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
-                      <Skeleton className="w-5 h-5 rounded-full" />
-                      <Skeleton className="h-3 w-28 rounded-md" />
+                      <Skeleton className="w-5 h-5 rounded-full shrink-0" />
+                      <Skeleton className="h-3 w-32 rounded-md" />
                     </div>
-                    <Skeleton className="h-3 w-16 rounded-md" />
+                    <div className="flex items-center gap-1.5">
+                      <Skeleton className="h-3 w-8 rounded-md" />
+                      <Skeleton className="h-3 w-16 rounded-md" />
+                    </div>
                   </div>
                 </div>
 
@@ -704,28 +777,24 @@ function ApprovalsPage() {
           /* Real Deliverable Approvals Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredItems.map((q) => {
-              const CatIcon = CATEGORY_ICONS[q.category] || Layers;
               const assetConfig = ASSET_TYPE_CONFIG[q.assetType] || ASSET_TYPE_CONFIG.PDF;
               const AssetIcon = assetConfig.icon;
 
               return (
                 <div
                   key={q.id}
-                  className="p-5 rounded-3xl border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] shadow-xs hover:border-foreground/20 hover:shadow-md transition-all flex flex-col justify-between group text-left"
+                  className="p-5 rounded-3xl border border-[#E7E7EC] dark:border-[#323238] bg-[#FAFAFC] dark:bg-[#242428] shadow-xs hover:border-foreground/20 hover:shadow-md transition-all flex flex-col justify-between group text-left"
                 >
                   <div>
-                    {/* Deliverable Header Row: Project Name & Status Badge */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider truncate">
-                          {q.project}
-                        </span>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-[11px] font-semibold text-foreground/70">
-                          {q.client}
-                        </span>
-                      </div>
-
+                    {/* Deliverable Header Row: Main Title and Top Right Status Badge aligned */}
+                    <div className="flex items-start justify-between gap-3">
+                      <h3
+                        onClick={() => setSelectedPreview(q)}
+                        className="text-base font-semibold text-foreground hover:underline cursor-pointer line-clamp-1 flex-1"
+                        title={q.title}
+                      >
+                        {q.title}
+                      </h3>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-tight whitespace-nowrap shrink-0 ${
                           q.status === "Overdue"
@@ -743,27 +812,8 @@ function ApprovalsPage() {
                       </span>
                     </div>
 
-                    {/* Deliverable Title & Category Tag */}
-                    <div className="mt-2.5">
-                      <h3
-                        onClick={() => setSelectedPreview(q)}
-                        className="text-base font-bold text-foreground hover:underline cursor-pointer line-clamp-1"
-                        title={q.title}
-                      >
-                        {q.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground font-medium">
-                        <span className="flex items-center gap-1">
-                          <CatIcon className="w-3 h-3 text-muted-foreground" />
-                          {q.category}
-                        </span>
-                        <span>•</span>
-                        <span className="font-mono">{q.version}</span>
-                      </div>
-                    </div>
-
-                    {/* DELIVERABLE FILE & LINK ATTACHMENT CARD (NO IMAGE SHOWN) */}
-                    <div className="mt-3.5 p-3.5 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F8F8FA] dark:bg-[#1C1C20] flex flex-col gap-2.5 transition-all hover:border-foreground/30">
+                    {/* DELIVERABLE FILE & CLIENT ATTACHMENT CARD */}
+                    <div className="mt-3.5 p-3.5 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#1E1E22] shadow-2xs flex flex-col gap-2.5 transition-all hover:border-foreground/30">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
@@ -780,22 +830,19 @@ function ApprovalsPage() {
                             >
                               {q.fileName}
                             </button>
-                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
-                              <span className="font-semibold text-foreground/80">{q.fileSize}</span>
-                              <span>•</span>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
                               <span>{assetConfig.label}</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Secondary Reference Link / Deliverable Actions replacing Open Link text */}
+                      {/* Client Company Name & Deliverable Actions */}
                       <div className="pt-2 border-t border-[#E7E7EC]/70 dark:border-[#323238]/70 flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-1.5 text-muted-foreground truncate min-w-0">
-                          <LinkIcon className="w-3 h-3 text-blue-500 shrink-0" />
-                          <span className="truncate">{q.secondaryLink?.name || q.fileName}</span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <span className="text-xs font-semibold text-foreground/80 truncate">
+                          {q.client}
+                        </span>
+                        <div className="flex items-center shrink-0 ml-2">
                           <button
                             type="button"
                             onClick={() => setSelectedPreview(q)}
@@ -803,14 +850,6 @@ function ApprovalsPage() {
                             title="Inspect Deliverable & Notes"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toast.success(`Downloading ${q.fileName}...`)}
-                            className="p-1.5 rounded-lg border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-muted-foreground hover:text-foreground hover:border-[#A8A8A8] transition-colors cursor-pointer"
-                            title="Download File"
-                          >
-                            <Download className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -838,7 +877,7 @@ function ApprovalsPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 font-medium">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[11px] text-muted-foreground font-normal">Due :</span>
                         <span
                           className={
                             q.status === "Overdue"

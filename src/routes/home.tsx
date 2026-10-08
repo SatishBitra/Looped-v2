@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Plus,
   Play,
+  Pause,
   FileText,
   MessageSquare,
   Sparkles,
@@ -29,6 +30,11 @@ import {
   Bell,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CapacityTimerModal } from "@/components/capacity/capacity-timer-modal";
+import { SwitchTimerConfirmModal } from "@/components/capacity/switch-timer-confirm-modal";
+import { FloatingTimerBar } from "@/components/capacity/floating-timer-bar";
+import { ActiveTimerSession, formatTimeParts } from "@/components/capacity/types";
+import { playCapacityAlertChime } from "@/components/capacity/audio-chime";
 
 export const Route = createFileRoute("/home")({
   component: EmployeeDashboardPage,
@@ -272,6 +278,72 @@ function EmployeeDashboardPage() {
   const [isLogTimeOpen, setIsLogTimeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Active Capacity Countdown Timer State & Session
+  const [activeTimer, setActiveTimer] = useState<ActiveTimerSession | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("looped_active_timer_session");
+        if (saved) return JSON.parse(saved);
+      } catch {
+        // Ignore JSON error
+      }
+    }
+    return null;
+  });
+
+  // Switch task confirmation modal state
+  const [pendingSwitchTask, setPendingSwitchTask] = useState<Task | null>(null);
+  const [isSwitchConfirmOpen, setIsSwitchConfirmOpen] = useState(false);
+
+  // Synchronize active timer session with localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (activeTimer) {
+      localStorage.setItem("looped_active_timer_session", JSON.stringify(activeTimer));
+    } else {
+      localStorage.removeItem("looped_active_timer_session");
+    }
+  }, [activeTimer]);
+
+  const isTimerRunning = Boolean(activeTimer?.isRunning && !activeTimer?.isPaused);
+
+  // Live Timer Countdown Interval (starts from back, e.g. 01:59:59 down to 00:00:00)
+  useEffect(() => {
+    if (!isTimerRunning) return;
+
+    const interval = setInterval(() => {
+      setActiveTimer((prev) => {
+        if (!prev || !prev.isRunning || prev.isPaused) return prev;
+
+        const nextRemaining = Math.max(0, prev.secondsRemaining - 1);
+        const nextElapsed = prev.secondsElapsed + 1;
+        const reachedZero = nextRemaining === 0;
+
+        if (reachedZero && !prev.isCompleted) {
+          playCapacityAlertChime();
+          toast.warning(
+            `Capacity Time Finished for ${prev.taskTitle}! Allocated ${prev.initialHours}h elapsed.`,
+            { duration: 8000 },
+          );
+          return {
+            ...prev,
+            secondsRemaining: 0,
+            secondsElapsed: nextElapsed,
+            isCompleted: true,
+          };
+        }
+
+        return {
+          ...prev,
+          secondsRemaining: nextRemaining,
+          secondsElapsed: nextElapsed,
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
   // New task form state
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskClient, setNewTaskClient] = useState("Internal");
@@ -279,15 +351,51 @@ function EmployeeDashboardPage() {
   const [newTaskPriority, setNewTaskPriority] = useState<"HIGH" | "MEDIUM" | "LOW">("MEDIUM");
   const [newTaskHours, setNewTaskHours] = useState(1.5);
 
-  // Time logging temporary state
-  const [logTimeHours, setLogTimeHours] = useState("1.0");
-  const [logTimeTaskId, setLogTimeTaskId] = useState("");
-
   // Capacity calculations
   const capacityTotal = 7;
   const assignedHours = useMemo(() => {
     return tasks.reduce((acc, curr) => acc + (curr.completed ? 0 : curr.hoursAssigned), 0);
   }, [tasks]);
+
+  // Live date timer & Employee identity
+  const [liveDate, setLiveDate] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setLiveDate(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const [employeeProfileName, setEmployeeProfileName] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("looped_profile_name");
+      if (saved && saved.trim()) return saved.trim();
+    }
+    return "Sandy K.";
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const saved = localStorage.getItem("looped_profile_name");
+      if (saved && saved.trim()) setEmployeeProfileName(saved.trim());
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const employeeShortName = useMemo(() => {
+    const trimmed = employeeProfileName.trim();
+    const parts = trimmed.split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    const lastPart = parts[parts.length - 1].replace(/\./g, "");
+    const lastInitial = lastPart[0] ? `${lastPart[0]}.` : "";
+    return lastInitial ? `${parts[0]} ${lastInitial}` : parts[0];
+  }, [employeeProfileName]);
+
+  const liveDateFormatted = useMemo(() => {
+    const weekday = liveDate.toLocaleDateString("en-US", { weekday: "long" });
+    const month = liveDate.toLocaleDateString("en-US", { month: "long" });
+    const day = liveDate.getDate();
+    return `${weekday}, ${month} ${day}`;
+  }, [liveDate]);
 
   const capacityRemaining = Math.max(0, capacityTotal - assignedHours);
   const dueTodayCount = useMemo(() => {
@@ -444,43 +552,242 @@ function EmployeeDashboardPage() {
     setIsNewTaskOpen(false);
   };
 
-  // Quick Action: Log Time
-  const handleLogTime = (e: React.FormEvent) => {
-    e.preventDefault();
-    const hours = parseFloat(logTimeHours);
-    if (isNaN(hours) || hours <= 0) {
-      toast.error("Enter a valid amount of hours");
+  // Quick Action: Start or open capacity countdown timer
+  const handleStartOrOpenTimer = (task: Task) => {
+    // Check if an active timer is already running/paused for another task
+    if (activeTimer && activeTimer.taskId !== task.id) {
+      setPendingSwitchTask(task);
+      setIsSwitchConfirmOpen(true);
       return;
     }
 
-    if (logTimeTaskId) {
-      setTasks((prev) =>
-        prev.map((t) => {
-          if (t.id === logTimeTaskId) {
-            const updated = { ...t, hoursAssigned: t.hoursAssigned + hours };
-            toast.success(`Logged ${hours}h on ${t.title}. Assigned capacity adjusted!`);
-            return updated;
-          }
-          return t;
-        }),
-      );
-    } else {
-      // General logs directly update daily assigned hours manually
-      toast.success(`Logged ${hours}h general workspace administration.`);
+    // If this task is already active, simply open the timer modal
+    if (activeTimer && activeTimer.taskId === task.id) {
+      setIsLogTimeOpen(true);
+      return;
     }
+
+    // Start new countdown timer for selected task
+    const totalSec = Math.max(60, Math.round(task.hoursAssigned * 3600));
+    setActiveTimer({
+      taskId: task.id,
+      taskTitle: task.title,
+      client: task.client,
+      department: task.department,
+      priority: task.priority,
+      initialHours: task.hoursAssigned,
+      totalSecondsAllocated: totalSec,
+      // Starts counting down from back: e.g. for 2 hours, starts from 01:59:59
+      secondsRemaining: Math.max(1, totalSec - 1),
+      secondsElapsed: 1,
+      isRunning: true,
+      isPaused: false,
+      isCompleted: false,
+      extendedMinutes: 0,
+      startedAt: Date.now(),
+    });
+
+    setIsLogTimeOpen(true);
+    toast.info(`Capacity countdown timer running for ${task.title}`);
+  };
+
+  // Toggle pause / play on active timer
+  const handleTogglePlayPause = () => {
+    if (!activeTimer) return;
+    const nextPaused = !activeTimer.isPaused;
+    setActiveTimer((prev) => (prev ? { ...prev, isPaused: nextPaused } : null));
+    if (nextPaused) {
+      toast.info(`Paused timer for ${activeTimer.taskTitle}`);
+    } else {
+      toast.info(`Resumed timer for ${activeTimer.taskTitle}`);
+    }
+  };
+
+  // Extend active timer duration
+  const handleExtendTimer = (minutes: number) => {
+    if (!activeTimer) return;
+    const addedSeconds = minutes * 60;
+    setActiveTimer((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        totalSecondsAllocated: prev.totalSecondsAllocated + addedSeconds,
+        secondsRemaining: prev.secondsRemaining + addedSeconds,
+        extendedMinutes: (prev.extendedMinutes || 0) + minutes,
+        isCompleted: false, // Reset completed status if time was up
+      };
+    });
+    toast.success(`Extended capacity allocation by +${minutes}m on ${activeTimer.taskTitle}`);
+  };
+
+  // Reset timer back to full allocated capacity
+  const handleResetTimer = () => {
+    if (!activeTimer) return;
+    setActiveTimer((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        secondsRemaining: prev.totalSecondsAllocated,
+        secondsElapsed: 0,
+        isCompleted: false,
+        isPaused: true,
+      };
+    });
+    toast.info(`Reset countdown for ${activeTimer.taskTitle}`);
+  };
+
+  // Stop timer and log hours into task capacity & activity timesheet
+  const handleStopAndLogTimer = (notes?: string) => {
+    if (!activeTimer) return;
+
+    // Calculate worked hours fraction
+    const workedHours = Math.max(0.1, +(activeTimer.secondsElapsed / 3600).toFixed(1));
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === activeTimer.taskId) {
+          const updated = {
+            ...t,
+            hoursAssigned: +(t.hoursAssigned + workedHours).toFixed(1),
+          };
+          return updated;
+        }
+        return t;
+      }),
+    );
 
     setActivities((prev) => [
       {
         id: Date.now(),
         user: "You",
-        text: `logged ${hours} hrs of work`,
+        text: `logged ${workedHours}h capacity on ${activeTimer.taskTitle}${
+          notes && notes.trim() ? ` — "${notes.trim()}"` : ""
+        }`,
         time: "Just now",
         type: "log",
       },
       ...prev,
     ]);
+
+    toast.success(`Logged ${workedHours}h capacity on ${activeTimer.taskTitle}!`);
     setIsLogTimeOpen(false);
+    setActiveTimer(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("looped_active_timer_session");
+    }
   };
+
+  // Switch task: Log current task elapsed time & start new task
+  const handleLogAndSwitch = () => {
+    if (!pendingSwitchTask || !activeTimer) return;
+
+    const workedHours = Math.max(0.1, +(activeTimer.secondsElapsed / 3600).toFixed(1));
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === activeTimer.taskId) {
+          return {
+            ...t,
+            hoursAssigned: +(t.hoursAssigned + workedHours).toFixed(1),
+          };
+        }
+        return t;
+      }),
+    );
+
+    setActivities((prev) => [
+      {
+        id: Date.now(),
+        user: "You",
+        text: `logged ${workedHours}h on ${activeTimer.taskTitle} (project switch)`,
+        time: "Just now",
+        type: "log",
+      },
+      ...prev,
+    ]);
+
+    toast.success(`Logged ${workedHours}h on ${activeTimer.taskTitle}`);
+
+    // Start timer for the target task
+    const target = pendingSwitchTask;
+    const totalSec = Math.max(60, Math.round(target.hoursAssigned * 3600));
+
+    setActiveTimer({
+      taskId: target.id,
+      taskTitle: target.title,
+      client: target.client,
+      department: target.department,
+      priority: target.priority,
+      initialHours: target.hoursAssigned,
+      totalSecondsAllocated: totalSec,
+      secondsRemaining: Math.max(1, totalSec - 1),
+      secondsElapsed: 1,
+      isRunning: true,
+      isPaused: false,
+      isCompleted: false,
+      extendedMinutes: 0,
+      startedAt: Date.now(),
+    });
+
+    setIsSwitchConfirmOpen(false);
+    setPendingSwitchTask(null);
+    setIsLogTimeOpen(true);
+    toast.info(`Started countdown timer for ${target.title}`);
+  };
+
+  // Switch task: Pause current task and start new task
+  const handlePauseAndSwitch = () => {
+    if (!pendingSwitchTask) return;
+
+    const target = pendingSwitchTask;
+    const totalSec = Math.max(60, Math.round(target.hoursAssigned * 3600));
+
+    setActiveTimer({
+      taskId: target.id,
+      taskTitle: target.title,
+      client: target.client,
+      department: target.department,
+      priority: target.priority,
+      initialHours: target.hoursAssigned,
+      totalSecondsAllocated: totalSec,
+      secondsRemaining: Math.max(1, totalSec - 1),
+      secondsElapsed: 1,
+      isRunning: true,
+      isPaused: false,
+      isCompleted: false,
+      extendedMinutes: 0,
+      startedAt: Date.now(),
+    });
+
+    setIsSwitchConfirmOpen(false);
+    setPendingSwitchTask(null);
+    setIsLogTimeOpen(true);
+    toast.info(`Switched active timer to ${target.title}`);
+  };
+
+  // Fallback: If timer modal is opened without an active session, initialize tasks[0]
+  useEffect(() => {
+    if (isLogTimeOpen && !activeTimer && tasks.length > 0) {
+      const target = tasks[0];
+      const totalSec = Math.max(60, Math.round(target.hoursAssigned * 3600));
+      setActiveTimer({
+        taskId: target.id,
+        taskTitle: target.title,
+        client: target.client,
+        department: target.department,
+        priority: target.priority,
+        initialHours: target.hoursAssigned,
+        totalSecondsAllocated: totalSec,
+        secondsRemaining: Math.max(1, totalSec - 1),
+        secondsElapsed: 1,
+        isRunning: true,
+        isPaused: false,
+        isCompleted: false,
+        extendedMinutes: 0,
+        startedAt: Date.now(),
+      });
+    }
+  }, [isLogTimeOpen, activeTimer, tasks]);
 
   return (
     <AppShell
@@ -494,8 +801,12 @@ function EmployeeDashboardPage() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium uppercase tracking-wider text-[#757575]">
-                  Daily Capacity Tracker
+                <span className="text-[13px] font-medium tracking-normal text-[#757575] dark:text-[#A0A0A5] flex items-center gap-1.5 flex-wrap">
+                  <span className="font-semibold text-[#111111] dark:text-[#F4F4F7]">
+                    {employeeShortName}
+                  </span>
+                  <span className="text-[#A8A8A8] dark:text-[#555]">•</span>
+                  <span>{liveDateFormatted}</span>
                 </span>
                 <span
                   className={`h-2 w-2 rounded-full ${
@@ -505,6 +816,7 @@ function EmployeeDashboardPage() {
                         ? "bg-[#D79A2C]"
                         : "bg-[#33A579]"
                   }`}
+                  title={`Capacity status: ${capacityState}`}
                 />
               </div>
               <h2 className="text-[30px] font-semibold tracking-tight text-[#111111] dark:text-[#F4F4F7] flex items-baseline gap-2">
@@ -664,12 +976,17 @@ function EmployeeDashboardPage() {
                 ) : (
                   filteredTasks.map((task) => {
                     const leftInd = getStatusIndicator(task.status);
+                    const isThisTaskTimerActive = activeTimer && activeTimer.taskId === task.id;
                     return (
                       <div
                         key={task.id}
                         onClick={() => setSelectedTask(task)}
                         className={`group p-5 hover:bg-[#F4F4F7] dark:hover:bg-[#28282c] transition-all duration-300 flex items-center justify-between cursor-pointer ${
                           task.completed ? "opacity-60" : ""
+                        } ${
+                          isThisTaskTimerActive
+                            ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-l-4 border-l-emerald-500"
+                            : ""
                         }`}
                       >
                         {/* Task Name, Client, Priority Details */}
@@ -716,13 +1033,48 @@ function EmployeeDashboardPage() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-[13px] text-[#757575] mt-1">
-                              <Briefcase className="w-3.5 h-3.5" />
+                            <div className="flex items-center gap-2 text-[13px] text-[#757575] mt-1 flex-wrap">
+                              <Briefcase className="w-3.5 h-3.5 shrink-0" />
                               <span>{task.client}</span>
                               <span className="text-[#E7E7EC] dark:text-[#323238]">•</span>
                               <span>{task.department}</span>
                               <span className="text-[#E7E7EC] dark:text-[#323238]">•</span>
-                              <span>{task.hoursAssigned} hrs</span>
+
+                              {/* Task Hour / Clock Timer Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartOrOpenTimer(task);
+                                }}
+                                title={
+                                  isThisTaskTimerActive
+                                    ? "Open Active Capacity Timer"
+                                    : "Click to start capacity countdown timer"
+                                }
+                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
+                                  isThisTaskTimerActive
+                                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs"
+                                    : "hover:bg-[#5A82E8]/10 hover:text-[#5A82E8] text-[#757575] dark:text-[#A0A0A5]"
+                                }`}
+                              >
+                                {isThisTaskTimerActive ? (
+                                  <>
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="font-mono tabular-nums font-semibold">
+                                      {formatTimeParts(activeTimer.secondsRemaining).fullFormatted}
+                                    </span>
+                                    <span className="text-[11px] font-normal text-emerald-700 dark:text-emerald-300">
+                                      {activeTimer.isPaused ? "(Paused)" : "(Running)"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>{task.hoursAssigned} hrs</span>
+                                  </>
+                                )}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -744,21 +1096,38 @@ function EmployeeDashboardPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toast.info(`Starting live session for ${task.title}`);
+                                handleStartOrOpenTimer(task);
                               }}
-                              title="Start timer"
-                              className="w-7 h-7 rounded-full hover:bg-[#33A579]/10 hover:text-[#33A579] grid place-items-center text-[#757575]"
+                              title={
+                                isThisTaskTimerActive
+                                  ? activeTimer.isPaused
+                                    ? "Resume Capacity Timer"
+                                    : "Pause Capacity Timer"
+                                  : "Start Capacity Timer"
+                              }
+                              className={`w-7 h-7 rounded-full grid place-items-center transition-colors ${
+                                isThisTaskTimerActive
+                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                                  : "hover:bg-[#33A579]/10 hover:text-[#33A579] text-[#757575]"
+                              }`}
                             >
-                              <Play className="w-3.5 h-3.5" />
+                              {isThisTaskTimerActive && !activeTimer.isPaused ? (
+                                <Pause className="w-3.5 h-3.5 fill-current" />
+                              ) : (
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                              )}
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setLogTimeTaskId(task.id);
-                                setIsLogTimeOpen(true);
+                                handleStartOrOpenTimer(task);
                               }}
-                              title="Log Time"
-                              className="w-7 h-7 rounded-full hover:bg-[#5A82E8]/10 hover:text-[#5A82E8] grid place-items-center text-[#757575]"
+                              title="Log Capacity Hours Timer"
+                              className={`w-7 h-7 rounded-full grid place-items-center transition-colors ${
+                                isThisTaskTimerActive
+                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                                  : "hover:bg-[#5A82E8]/10 hover:text-[#5A82E8] text-[#757575]"
+                              }`}
                             >
                               <Clock className="w-3.5 h-3.5" />
                             </button>
@@ -1275,85 +1644,47 @@ function EmployeeDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* 3. Log Time Modal */}
+      {/* 3. Capacity Countdown Timer Modal (Replaces old form with clock timer animation & controls) */}
       <AnimatePresence>
-        {isLogTimeOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsLogTimeOpen(false)}
-              className="fixed inset-0 bg-black"
-            />
+        {isLogTimeOpen && activeTimer && (
+          <CapacityTimerModal
+            isOpen={isLogTimeOpen}
+            onClose={() => setIsLogTimeOpen(false)}
+            session={activeTimer}
+            onTogglePlayPause={handleTogglePlayPause}
+            onStopAndLog={handleStopAndLogTimer}
+            onExtendTimer={handleExtendTimer}
+            onResetTimer={handleResetTimer}
+          />
+        )}
+      </AnimatePresence>
 
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] max-w-md w-full p-6 shadow-2xl z-10 relative space-y-5"
-            >
-              <div className="flex items-center justify-between border-b border-[#E7E7EC] dark:border-[#323238] pb-3">
-                <h3 className="text-[17px] font-medium text-[#111111] dark:text-white">
-                  📝 Log Capacity Hours
-                </h3>
-                <button
-                  onClick={() => setIsLogTimeOpen(false)}
-                  className="text-[#A8A8A8] hover:text-[#111]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+      {/* 4. Switch Project Timer Confirmation Modal */}
+      <AnimatePresence>
+        {isSwitchConfirmOpen && activeTimer && pendingSwitchTask && (
+          <SwitchTimerConfirmModal
+            isOpen={isSwitchConfirmOpen}
+            onClose={() => {
+              setIsSwitchConfirmOpen(false);
+              setPendingSwitchTask(null);
+            }}
+            currentSession={activeTimer}
+            incomingTask={pendingSwitchTask}
+            onLogAndSwitch={handleLogAndSwitch}
+            onPauseAndSwitch={handlePauseAndSwitch}
+          />
+        )}
+      </AnimatePresence>
 
-              <form onSubmit={handleLogTime} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[12px] font-medium text-[#757575]">
-                    Select Task to update capacity
-                  </label>
-                  <select
-                    value={logTimeTaskId}
-                    onChange={(e) => setLogTimeTaskId(e.target.value)}
-                    className="w-full h-10 px-2 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px]"
-                  >
-                    <option value="">General Work (Admin/Operational)</option>
-                    {tasks.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.title} ({t.client})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[12px] font-medium text-[#757575]">Logged Hours</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    value={logTimeHours}
-                    onChange={(e) => setLogTimeHours(e.target.value)}
-                    className="w-full h-10 px-3 border border-[#E7E7EC] dark:border-[#323238] rounded-xl text-[13px]"
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsLogTimeOpen(false)}
-                    className="flex-1 h-10 rounded-xl bg-[#F4F4F7] text-[#111111] text-[13px] font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 h-10 rounded-xl bg-[#111111] dark:bg-white text-white dark:text-[#111111] text-[13px] font-medium"
-                  >
-                    Confirm Log Time
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
+      {/* 5. Persistent Floating Mini-Timer Bar (Shown when active timer is running in background) */}
+      <AnimatePresence>
+        {activeTimer && !isLogTimeOpen && (
+          <FloatingTimerBar
+            session={activeTimer}
+            onOpenModal={() => setIsLogTimeOpen(true)}
+            onTogglePlayPause={handleTogglePlayPause}
+            onStopAndLog={() => handleStopAndLogTimer()}
+          />
         )}
       </AnimatePresence>
     </AppShell>

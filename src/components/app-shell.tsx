@@ -1614,7 +1614,7 @@ function TopNav({
 export function AppShell({
   children,
   breadcrumb,
-  hideTopNav = false,
+  hideTopNav = true,
   searchQuery,
   setSearchQuery,
   onQuickAdd,
@@ -1662,6 +1662,18 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
+
+      {/* Mobile Drawer Trigger when Nav Header is Hidden */}
+      {hideTopNav && (
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="md:hidden fixed top-3 left-3 z-30 w-9 h-9 rounded-xl bg-card border border-border text-foreground shadow-xs grid place-items-center cursor-pointer hover:bg-accent"
+          title="Open Navigation"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+      )}
 
       {/* Mobile Drawer Overlay */}
       <AnimatePresence>

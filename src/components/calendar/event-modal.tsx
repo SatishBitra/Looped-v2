@@ -120,7 +120,7 @@ export function EventModal({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Design sync, Friday standup..."
                 required
-                className="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all"
+                className="w-full h-10 px-3.5 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground transition-all"
               />
             </div>
 
@@ -134,7 +134,7 @@ export function EventModal({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
 
@@ -147,7 +147,7 @@ export function EventModal({
                   value={timeStart}
                   onChange={(e) => setTimeStart(e.target.value)}
                   placeholder="9:00 AM"
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
 
@@ -160,7 +160,7 @@ export function EventModal({
                   value={timeEnd}
                   onChange={(e) => setTimeEnd(e.target.value)}
                   placeholder="10:00 AM"
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
             </div>
@@ -204,7 +204,7 @@ export function EventModal({
                 <select
                   value={scope}
                   onChange={(e) => setScope(e.target.value as CalendarEventItem["scope"])}
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer"
                 >
                   <option value="all">All events</option>
                   <option value="shared">Shared</option>
@@ -222,7 +222,7 @@ export function EventModal({
                   value={project}
                   onChange={(e) => setProject(e.target.value)}
                   placeholder="e.g. Design, Internal Ops..."
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
             </div>
@@ -238,7 +238,7 @@ export function EventModal({
                   value={meetingLink}
                   onChange={(e) => setMeetingLink(e.target.value)}
                   placeholder="https://meet.google.com/..."
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
 
@@ -251,7 +251,7 @@ export function EventModal({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. Studio Room 2, Downtown..."
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full h-10 px-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
             </div>
@@ -266,7 +266,7 @@ export function EventModal({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add agenda topics, deliverables, or notes..."
                 rows={2}
-                className="w-full p-3 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground resize-none"
+                className="w-full p-3 rounded-xl border border-[#E4E4EB] dark:border-[#34343B] bg-white/95 dark:bg-[#222228] text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-foreground resize-none"
               />
             </div>
 

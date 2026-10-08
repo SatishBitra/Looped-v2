@@ -356,6 +356,7 @@ export const INITIAL_THREADS: ChatThread[] = [
     isPinned: false,
     hasAttachment: true,
     serviceBadge: "messenger",
+    isClient: true,
     messages: [
       {
         id: "ls-1",
@@ -412,6 +413,7 @@ export const INITIAL_THREADS: ChatThread[] = [
     isPinned: false,
     hasAttachment: true,
     serviceBadge: "whatsapp",
+    isClient: true,
     messages: [
       {
         id: "sk-1",
@@ -455,6 +457,7 @@ export const INITIAL_THREADS: ChatThread[] = [
     isPinned: false,
     callStatus: "ended",
     serviceBadge: "messenger",
+    isClient: true,
     messages: [],
   },
   {
@@ -471,6 +474,7 @@ export const INITIAL_THREADS: ChatThread[] = [
     isPinned: false,
     hasAttachment: true,
     serviceBadge: "messenger",
+    isClient: true,
     messages: [],
   },
   {
@@ -501,6 +505,7 @@ export const INITIAL_THREADS: ChatThread[] = [
     isStarred: false,
     isPinned: false,
     callStatus: "missed",
+    isClient: true,
     messages: [],
   },
   {

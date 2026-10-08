@@ -83,11 +83,12 @@ export interface ChatThread {
   hasAttachment?: boolean;
   callStatus?: "missed" | "ended" | null;
   serviceBadge?: "messenger" | "whatsapp" | "gmail" | null;
+  isClient?: boolean;
   sharedImages?: string[];
   sharedFiles?: SharedFileItem[];
   sharedLinks?: SharedLinkItem[];
   messages: ChatMessage[];
 }
 
-export type MessageFilterCategory = "inbox" | "explore" | "groups" | "all";
+export type MessageFilterCategory = "inbox" | "explore" | "groups" | "clients" | "all";
 export type MessageSortOption = "newest" | "unread" | "starred";

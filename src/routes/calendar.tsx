@@ -33,6 +33,7 @@ import { INITIAL_CALENDAR_EVENTS } from "@/components/calendar/calendar-events-d
 import { EventModal } from "@/components/calendar/event-modal";
 import { EventDetailModal } from "@/components/calendar/event-detail-modal";
 import { DayEventsModal } from "@/components/calendar/day-events-modal";
+import { CalendarPickerCard } from "@/components/calendar/calendar-picker-card";
 
 export const Route = createFileRoute("/calendar")({
   component: CalendarPage,
@@ -103,6 +104,7 @@ function CalendarPage() {
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isInlineSearchOpen, setIsInlineSearchOpen] = useState(false);
+  const [isCalendarPickerOpen, setIsCalendarPickerOpen] = useState(false);
 
   // Selected date for day view or quick addition (Default today's date)
   const [selectedDate, setSelectedDate] = useState(() => todayStr);
@@ -299,21 +301,53 @@ function CalendarPage() {
   }, [selectedDate, todayStr]);
 
   // Navigation handlers
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
+  const handlePrev = () => {
+    if (viewMode === "Week view") {
+      const d = new Date(selectedDate + "T12:00:00");
+      d.setDate(d.getDate() - 7);
+      const str = formatYYYYMMDD(d);
+      setSelectedDate(str);
+      setCurrentMonth(d.getMonth());
+      setCurrentYear(d.getFullYear());
+    } else if (viewMode === "Day view") {
+      const d = new Date(selectedDate + "T12:00:00");
+      d.setDate(d.getDate() - 1);
+      const str = formatYYYYMMDD(d);
+      setSelectedDate(str);
+      setCurrentMonth(d.getMonth());
+      setCurrentYear(d.getFullYear());
     } else {
-      setCurrentMonth((m) => m - 1);
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear((y) => y - 1);
+      } else {
+        setCurrentMonth((m) => m - 1);
+      }
     }
   };
 
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
+  const handleNext = () => {
+    if (viewMode === "Week view") {
+      const d = new Date(selectedDate + "T12:00:00");
+      d.setDate(d.getDate() + 7);
+      const str = formatYYYYMMDD(d);
+      setSelectedDate(str);
+      setCurrentMonth(d.getMonth());
+      setCurrentYear(d.getFullYear());
+    } else if (viewMode === "Day view") {
+      const d = new Date(selectedDate + "T12:00:00");
+      d.setDate(d.getDate() + 1);
+      const str = formatYYYYMMDD(d);
+      setSelectedDate(str);
+      setCurrentMonth(d.getMonth());
+      setCurrentYear(d.getFullYear());
     } else {
-      setCurrentMonth((m) => m + 1);
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear((y) => y + 1);
+      } else {
+        setCurrentMonth((m) => m + 1);
+      }
     }
   };
 
@@ -359,9 +393,61 @@ function CalendarPage() {
     setIsAddModalOpen(true);
   };
 
-  // Range subtitle: e.g. "Jan 1, 2025 – Jan 31, 2025"
-  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const rangeSubtitle = `${MONTH_SHORT[currentMonth]} 1, ${currentYear} – ${MONTH_SHORT[currentMonth]} ${lastDayOfMonth}, ${currentYear}`;
+  // Display title based on active view mode
+  const displayTitle = useMemo(() => {
+    if (viewMode === "Week view" && weekDays.length > 0) {
+      const midDay = new Date(weekDays[3].dateStr + "T12:00:00");
+      return `${MONTH_NAMES[midDay.getMonth()]} ${midDay.getFullYear()}`;
+    }
+    if (viewMode === "Day view") {
+      const d = new Date(selectedDate + "T12:00:00");
+      return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    return `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+  }, [viewMode, weekDays, selectedDate, currentMonth, currentYear]);
+
+  // Dynamic range subtitle based on active view mode
+  const rangeSubtitle = useMemo(() => {
+    if (viewMode === "Month view") {
+      const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+      return `${MONTH_SHORT[currentMonth]} 1, ${currentYear} – ${MONTH_SHORT[currentMonth]} ${lastDay}, ${currentYear}`;
+    }
+
+    if (viewMode === "Week view") {
+      if (!weekDays.length) return "";
+      const dFirst = new Date(weekDays[0].dateStr + "T12:00:00");
+      const dLast = new Date(weekDays[6].dateStr + "T12:00:00");
+
+      const m1 = MONTH_SHORT[dFirst.getMonth()];
+      const m2 = MONTH_SHORT[dLast.getMonth()];
+      const y1 = dFirst.getFullYear();
+      const y2 = dLast.getFullYear();
+
+      if (y1 !== y2) {
+        return `${m1} ${dFirst.getDate()}, ${y1} – ${m2} ${dLast.getDate()}, ${y2}`;
+      }
+      if (m1 !== m2) {
+        return `${m1} ${dFirst.getDate()} – ${m2} ${dLast.getDate()}, ${y2}`;
+      }
+      return `${m1} ${dFirst.getDate()} – ${m2} ${dLast.getDate()}, ${y2}`;
+    }
+
+    if (viewMode === "Day view") {
+      const d = new Date(selectedDate + "T12:00:00");
+      return d.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+
+    if (viewMode === "Agenda view") {
+      return `Schedule for ${MONTH_NAMES[currentMonth]} ${currentYear}`;
+    }
+
+    return `${MONTH_SHORT[currentMonth]} ${currentYear}`;
+  }, [viewMode, currentMonth, currentYear, weekDays, selectedDate]);
 
   return (
     <AppShell>
@@ -370,33 +456,53 @@ function CalendarPage() {
         <div className="bg-white dark:bg-[#242428] border border-[#E7E7EC] dark:border-[#323238] rounded-[28px] sm:rounded-[32px] p-4 sm:p-7 shadow-[var(--shadow-soft)] overflow-hidden">
           {/* Card Top Toolbar */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-[#E7E7EC] dark:border-[#323238]">
-            {/* Left: Date Badge + Month Title & Date Range */}
-            <div className="flex items-center gap-3.5">
-              {/* Date Badge: SEP 17 (Live dynamic current date) */}
-              <div className="w-12 h-12 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] flex flex-col items-center justify-center shrink-0 shadow-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground leading-none">
-                  {MONTH_SHORT[todayDate.getMonth()]}
-                </span>
-                <span className="text-base font-extrabold text-foreground leading-none mt-1">
-                  {todayDate.getDate()}
-                </span>
-              </div>
-
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                  <span>
-                    {MONTH_NAMES[currentMonth]} {currentYear}
+            {/* Left: Date Badge + Month Title & Date Range (with Calendar Picker Card trigger) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
+                className="flex items-center gap-3.5 group cursor-pointer text-left focus:outline-none"
+                title="Open calendar card to pick any date or month"
+              >
+                {/* Date Badge: dynamic current system date */}
+                <div className="w-12 h-12 rounded-2xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] flex flex-col items-center justify-center shrink-0 shadow-xs group-hover:border-foreground/40 transition-colors">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground leading-none">
+                    {MONTH_SHORT[todayDate.getMonth()]}
                   </span>
-                  {currentYear === todayDate.getFullYear() &&
-                    currentMonth === todayDate.getMonth() && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Live
-                      </span>
-                    )}
-                </h2>
-                <p className="text-xs text-muted-foreground font-medium mt-0.5">{rangeSubtitle}</p>
-              </div>
+                  <span className="text-base font-extrabold text-foreground leading-none mt-1">
+                    {todayDate.getDate()}
+                  </span>
+                </div>
+
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                    <span>{displayTitle}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground group-hover:text-foreground transition-transform duration-200 ${
+                        isCalendarPickerOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </h2>
+                  <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                    {rangeSubtitle}
+                  </p>
+                </div>
+              </button>
+
+              {/* Popover Calendar Card for Selecting Any Date/Month */}
+              <CalendarPickerCard
+                isOpen={isCalendarPickerOpen}
+                onClose={() => setIsCalendarPickerOpen(false)}
+                selectedDate={selectedDate}
+                todayDate={todayDate}
+                onSelectDate={(dateStr) => {
+                  setSelectedDate(dateStr);
+                  const [y, m] = dateStr.split("-").map(Number);
+                  setCurrentYear(y);
+                  setCurrentMonth(m - 1);
+                  toast.info(`Selected date: ${dateStr}`);
+                }}
+              />
             </div>
 
             {/* Middle: Scope Filter Pills */}
@@ -441,13 +547,19 @@ function CalendarPage() {
                 <Search className="w-4 h-4" />
               </button>
 
-              {/* Segmented Month Navigation: [ < ] [ Today ] [ > ] */}
+              {/* Segmented Navigation: [ < ] [ Today ] [ > ] */}
               <div className="flex items-center rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] p-0.5 shadow-xs">
                 <button
                   type="button"
-                  onClick={handlePrevMonth}
+                  onClick={handlePrev}
                   className="w-8 h-8 rounded-lg grid place-items-center text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-[#242428] transition-colors cursor-pointer"
-                  title="Previous month"
+                  title={
+                    viewMode === "Week view"
+                      ? "Previous week"
+                      : viewMode === "Day view"
+                        ? "Previous day"
+                        : "Previous month"
+                  }
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -460,9 +572,15 @@ function CalendarPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleNextMonth}
+                  onClick={handleNext}
                   className="w-8 h-8 rounded-lg grid place-items-center text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-[#242428] transition-colors cursor-pointer"
-                  title="Next month"
+                  title={
+                    viewMode === "Week view"
+                      ? "Next week"
+                      : viewMode === "Day view"
+                        ? "Next day"
+                        : "Next month"
+                  }
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -637,7 +755,7 @@ function CalendarPage() {
                                     e.stopPropagation();
                                     setSelectedEvent(evt);
                                   }}
-                                  className={`w-full flex items-center justify-between gap-1 px-2 py-1 rounded-lg text-left text-[11px] font-medium border transition-all cursor-pointer shadow-xs truncate ${
+                                  className={`w-full flex items-center justify-between gap-1 px-2 py-1 rounded-md text-left text-[11px] font-medium border transition-all cursor-pointer shadow-xs truncate ${
                                     style.bg
                                   } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
                                   title={`${evt.title} (${evt.timeStart})`}
@@ -689,27 +807,54 @@ function CalendarPage() {
                 {weekDays.map((dayInfo) => {
                   const dayEvents = eventsByDate.get(dayInfo.dateStr) || [];
                   const isToday = dayInfo.isToday;
+                  const isSelected = dayInfo.dateStr === selectedDate;
 
                   return (
                     <div
                       key={dayInfo.dayName}
-                      className={`p-3.5 rounded-2xl border transition-colors flex flex-col min-h-[300px] ${
-                        isToday
-                          ? "bg-accent/40 border-foreground/30 shadow-xs"
-                          : "bg-white dark:bg-[#242428] border-[#E7E7EC] dark:border-[#323238]"
+                      onClick={() => setSelectedDate(dayInfo.dateStr)}
+                      className={`p-3 rounded-xl border transition-all flex flex-col min-h-[300px] cursor-pointer group ${
+                        isSelected
+                          ? "bg-blue-50/70 dark:bg-blue-950/30 border-blue-500/80 dark:border-blue-400 ring-2 ring-blue-500/25 shadow-xs"
+                          : isToday
+                            ? "bg-accent/40 border-foreground/40 shadow-xs"
+                            : "bg-white dark:bg-[#242428] border-[#E7E7EC] dark:border-[#323238] hover:border-foreground/30"
                       }`}
                     >
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#E7E7EC] dark:border-[#323238]">
                         <div>
-                          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
-                            {dayInfo.dayName}
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] font-semibold text-muted-foreground uppercase">
+                              {dayInfo.dayName}
+                            </p>
+                            {isSelected && !isToday && (
+                              <span className="px-1.5 py-0.2 rounded-sm text-[9px] font-bold bg-blue-600 text-white leading-tight">
+                                Active
+                              </span>
+                            )}
+                            {isToday && (
+                              <span className="px-1.5 py-0.2 rounded-sm text-[9px] font-bold bg-foreground text-background leading-tight">
+                                Today
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className={`text-sm font-bold ${
+                              isSelected
+                                ? "text-blue-600 dark:text-blue-400 font-extrabold"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {dayInfo.dayNum}
                           </p>
-                          <p className="text-sm font-bold text-foreground">{dayInfo.dayNum}</p>
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleOpenAddEvent(dayInfo.dateStr)}
-                          className="w-6 h-6 rounded-lg hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenAddEvent(dayInfo.dateStr);
+                          }}
+                          className="w-6 h-6 rounded-lg hover:bg-accent grid place-items-center text-muted-foreground hover:text-foreground transition-colors"
                           title="Add event"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -728,8 +873,11 @@ function CalendarPage() {
                               <button
                                 key={evt.id}
                                 type="button"
-                                onClick={() => setSelectedEvent(evt)}
-                                className={`w-full p-2 rounded-xl text-left text-xs font-medium border transition-all ${
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(evt);
+                                }}
+                                className={`w-full p-2 rounded-md text-left text-xs font-medium border transition-all ${
                                   style.bg
                                 } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
                               >
@@ -829,7 +977,7 @@ function CalendarPage() {
                                 key={evt.id}
                                 type="button"
                                 onClick={() => setSelectedEvent(evt)}
-                                className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-all ${
+                                className={`w-full p-2.5 sm:p-3 rounded-md border flex items-center justify-between text-left transition-all ${
                                   style.bg
                                 } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
                               >
@@ -893,7 +1041,7 @@ function CalendarPage() {
                               key={evt.id}
                               type="button"
                               onClick={() => setSelectedEvent(evt)}
-                              className={`p-3 rounded-xl border text-left transition-all ${
+                              className={`p-2.5 sm:p-3 rounded-md border text-left transition-all ${
                                 style.bg
                               } ${style.text} ${style.border} hover:opacity-90 active:scale-[0.99]`}
                             >

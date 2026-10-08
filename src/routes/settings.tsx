@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AppShell, Card, SectionTitle } from "@/components/app-shell";
+import { AppShell, Card, SectionTitle, StatusPill } from "@/components/app-shell";
 import { signOutUser } from "@/lib/auth";
 import {
   User,
@@ -27,83 +27,248 @@ import {
   Radio,
   Bug,
   RefreshCw,
+  Copy,
+  Clock,
+  Layers,
+  Lock,
+  Globe,
+  Sliders,
+  Send,
+  UserCheck,
+  Mail,
+  Zap,
 } from "lucide-react";
 import * as Sentry from "@sentry/tanstackstart-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { BetterStackStatus } from "@/components/betterstack-status";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-const groups = [
-  { icon: User, title: "Profile", desc: "Name, role, avatar and personal preferences" },
-  { icon: Bell, title: "Notifications", desc: "Email, in-app and digest cadence" },
-  { icon: Users, title: "Team & pods", desc: "Members, roles, allocations" },
-  { icon: Shield, title: "Permissions", desc: "Role-based visibility and approvals" },
-  { icon: Palette, title: "Appearance", desc: "Theme, density, sidebar" },
-  { icon: KeyRound, title: "Security", desc: "SSO, sessions, API keys" },
-  { icon: Activity, title: "Status", desc: "System health, uptime & Sentry monitoring" },
+interface GroupItem {
+  id: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  title: string;
+  desc: string;
+  badgeTone?: "blue" | "green" | "purple" | "orange" | "rose" | "indigo";
+}
+
+const groups: GroupItem[] = [
+  {
+    id: "Profile",
+    icon: User,
+    title: "Profile",
+    desc: "Personal info, role, avatar and preferences",
+    badgeTone: "blue",
+  },
+  {
+    id: "Notifications",
+    icon: Bell,
+    title: "Notifications",
+    desc: "Email, in-app channels and digest cadence",
+    badgeTone: "orange",
+  },
+  {
+    id: "Team & pods",
+    icon: Users,
+    title: "Team & pods",
+    desc: "Members, allocations and pod workload",
+    badgeTone: "green",
+  },
+  {
+    id: "Permissions",
+    icon: Shield,
+    title: "Permissions",
+    desc: "Role-based clearance and approval rules",
+    badgeTone: "purple",
+  },
+  {
+    id: "Appearance",
+    icon: Palette,
+    title: "Appearance",
+    desc: "Canvas themes, density and sidebar layout",
+    badgeTone: "rose",
+  },
+  {
+    id: "Security",
+    icon: KeyRound,
+    title: "Security",
+    desc: "Passwords, 2FA, API keys and sessions",
+    badgeTone: "indigo",
+  },
+  {
+    id: "Status",
+    icon: Activity,
+    title: "Status",
+    desc: "Live infrastructure, uptime & telemetry",
+    badgeTone: "green",
+  },
+];
+
+interface PodMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  pod: string;
+  avatar: string;
+  status: "active" | "away" | "offline";
+}
+
+const INITIAL_MEMBERS: PodMember[] = [
+  {
+    id: "m-1",
+    name: "Anna Rossi",
+    email: "anna@loooped.studio",
+    role: "Lead Producer",
+    pod: "Pod Alpha (Design)",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    status: "active",
+  },
+  {
+    id: "m-2",
+    name: "Marta Lin",
+    email: "marta@loooped.studio",
+    role: "Senior Art Director",
+    pod: "Pod Alpha (Design)",
+    avatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    status: "active",
+  },
+  {
+    id: "m-3",
+    name: "Ivan Petrov",
+    email: "ivan@loooped.studio",
+    role: "Lead Motion Designer",
+    pod: "Pod Beta (Motion)",
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    status: "active",
+  },
+  {
+    id: "m-4",
+    name: "Sara Davis",
+    email: "sara@loooped.studio",
+    role: "Brand Strategist",
+    pod: "Pod Gamma (Brand)",
+    avatar:
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+    status: "away",
+  },
+  {
+    id: "m-5",
+    name: "Lucas Vance",
+    email: "lucas@loooped.studio",
+    role: "Creative Developer",
+    pod: "Pod Delta (Web)",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    status: "active",
+  },
 ];
 
 function SettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Profile");
 
-  // State for Profile
-  const [profileName, setProfileName] = useState("Anna Rossi");
-  const [profileEmail, setProfileEmail] = useState("anna@loooped.studio");
-  const [profileRole, setProfileRole] = useState("Producer");
-  const [profilePod, setProfilePod] = useState("Design Pod");
+  // Profile State
+  const [profileName, setProfileName] = useState(() => {
+    return localStorage.getItem("looped_profile_name") || "Anna Rossi";
+  });
+  const [profileEmail, setProfileEmail] = useState(() => {
+    return localStorage.getItem("looped_profile_email") || "anna@loooped.studio";
+  });
+  const [profileRole, setProfileRole] = useState("Lead Producer");
+  const [profilePod, setProfilePod] = useState("Pod Alpha (Design)");
+  const [profileTimezone, setProfileTimezone] = useState("Pacific Time (US & Canada) UTC-8");
+  const [profileBio, setProfileBio] = useState(
+    "Orchestrating design sprints, cross-pod allocations, and milestone handoffs.",
+  );
 
-  // State for Notifications
+  // Notifications State
   const [notifApprovals, setNotifApprovals] = useState(true);
   const [notifClient, setNotifClient] = useState(true);
   const [notifCapacity, setNotifCapacity] = useState(true);
   const [notifWeekly, setNotifWeekly] = useState(false);
   const [notifSlack, setNotifSlack] = useState(true);
-  const [notifPush, setNotifPush] = useState(false);
+  const [notifPush, setNotifPush] = useState(true);
+  const [notifSound, setNotifSound] = useState(false);
   const [digestFrequency, setDigestFrequency] = useState("Weekly");
 
-  // State for Appearance
-  const [selectedTheme, setSelectedTheme] = useState("light");
+  // Appearance State
+  const [selectedTheme, setSelectedTheme] = useState(() => {
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark") ? "charcoal" : "light";
+    }
+    return "light";
+  });
   const [selectedDensity, setSelectedDensity] = useState("spacious");
   const [sidebarExpanded, setSidebarExpanded] = useState("expanded");
+  const [accentColor, setAccentColor] = useState("blue");
 
-  // State for Security
+  // Security State
   const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
   const [apiKeys, setApiKeys] = useState([
     {
+      id: "key-1",
       name: "Live Client Portal Integration",
-      prefix: "LOOOPED_LIVE_1s9f3a...",
+      prefix: "LOOOPED_LIVE_1s9f3a8b29c...",
       created: "July 02, 2026",
+      scope: "read:approvals, write:comments",
     },
-    { name: "Handoff Automated Sync", prefix: "LOOOPED_DEV_29ka81...", created: "June 14, 2026" },
+    {
+      id: "key-2",
+      name: "Automated Figma Sync Webhook",
+      prefix: "LOOOPED_DEV_29ka8100ff1...",
+      created: "June 14, 2026",
+      scope: "read:files, write:deliverables",
+    },
   ]);
   const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyScope, setNewKeyScope] = useState("read_write");
 
-  // State for Permissions
+  // Permissions State
   const [selectedRoleGroup, setSelectedRoleGroup] = useState("Manager");
   const [permApprovals, setPermApprovals] = useState(true);
   const [permInvite, setPermInvite] = useState(true);
   const [permClientFolders, setPermClientFolders] = useState(true);
   const [permEditBudgets, setPermEditBudgets] = useState(false);
   const [permAccessBilling, setPermAccessBilling] = useState(false);
-  const [approvalTiers, setApprovalTiers] = useState("single");
+  const [permExportAudit, setPermExportAudit] = useState(true);
 
-  // Save actions
+  // Team & Pods State
+  const [members, setMembers] = useState<PodMember[]>(INITIAL_MEMBERS);
+  const [searchMember, setSearchMember] = useState("");
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("Designer");
+  const [invitePod, setInvitePod] = useState("Pod Alpha (Design)");
+
+  // Handle Profile Save
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Profile details updated successfully.");
+    localStorage.setItem("looped_profile_name", profileName);
+    localStorage.setItem("looped_profile_email", profileEmail);
+    toast.success("Profile preferences saved successfully.");
   };
 
+  // Handle Security Password Save
   const handleSaveSecurity = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPass) {
-      toast.error("Please enter your current password to make security changes.");
+      toast.error("Please enter your current password to authorize security updates.");
+      return;
+    }
+    if (newPass.length < 8) {
+      toast.error("New password must be at least 8 characters long.");
       return;
     }
     if (newPass !== confirmPass) {
@@ -116,258 +281,433 @@ function SettingsPage() {
     setConfirmPass("");
   };
 
+  // Handle API Key Creation
   const handleCreateApiKey = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyName.trim()) {
-      toast.error("Please provide a name for the API Key.");
+      toast.error("Please specify a name for the API Token.");
       return;
     }
-    const randomHex = Array.from({ length: 12 }, () =>
+    const randomHex = Array.from({ length: 16 }, () =>
       Math.floor(Math.random() * 16).toString(16),
     ).join("");
     const newKey = {
-      name: newKeyName,
+      id: `key-${Date.now()}`,
+      name: newKeyName.trim(),
       prefix: `LOOOPED_LIVE_${randomHex}...`,
       created: "Today",
+      scope: newKeyScope === "read_write" ? "read:all, write:all" : "read:all",
     };
-    setApiKeys([...apiKeys, newKey]);
+    setApiKeys([newKey, ...apiKeys]);
     setNewKeyName("");
-    toast.success(`API Key "${newKey.name}" generated.`);
+    toast.success(`API Token "${newKey.name}" generated successfully.`);
   };
 
-  const handleDeleteApiKey = (name: string) => {
-    setApiKeys(apiKeys.filter((k) => k.name !== name));
-    toast.info("API token revoked.");
+  const handleDeleteApiKey = (id: string, name: string) => {
+    setApiKeys(apiKeys.filter((k) => k.id !== id));
+    toast.info(`API Token "${name}" revoked.`);
   };
+
+  const handleCopyKey = (prefix: string) => {
+    navigator.clipboard?.writeText(prefix);
+    toast.success("Token copied to clipboard");
+  };
+
+  // Handle Add Team Member
+  const handleInviteMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteName.trim() || !inviteEmail.trim()) {
+      toast.error("Please provide both name and email.");
+      return;
+    }
+    const newM: PodMember = {
+      id: `m-${Date.now()}`,
+      name: inviteName.trim(),
+      email: inviteEmail.trim(),
+      role: inviteRole,
+      pod: invitePod,
+      avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
+      status: "active",
+    };
+    setMembers([newM, ...members]);
+    setIsInviteModalOpen(false);
+    setInviteName("");
+    setInviteEmail("");
+    toast.success(`Invited ${newM.name} to ${newM.pod}`);
+  };
+
+  // Send Test Notification
+  const handleSendTestNotification = () => {
+    toast.info("Test Notification: New Approval Ready", {
+      description: "Q4 Brand Campaign v2 submitted by Pod Alpha",
+      action: {
+        label: "View",
+        onClick: () => navigate({ to: "/approvals" }),
+      },
+    });
+  };
+
+  const filteredMembers = members.filter(
+    (m) =>
+      m.name.toLowerCase().includes(searchMember.toLowerCase()) ||
+      m.role.toLowerCase().includes(searchMember.toLowerCase()) ||
+      m.pod.toLowerCase().includes(searchMember.toLowerCase()),
+  );
 
   return (
     <AppShell breadcrumb={["Workspace", "Settings"]}>
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-[30px] font-semibold tracking-tight">Settings</h1>
-        <p className="text-[14px] text-muted-foreground mt-1">
-          Personal and workspace-level preferences
-        </p>
+      {/* Page Header */}
+      <div className="mb-6 pb-2 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight text-foreground">
+              Settings & Preferences
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-surface border border-border text-muted-foreground">
+              v2.4
+            </span>
+          </div>
+          <p className="text-[13px] text-muted-foreground mt-1">
+            Manage your personal profile, notifications, pod allocations, role permissions, and
+            system security
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("Status")}
+            className="h-8 px-3 rounded-xl bg-surface hover:bg-muted border border-border text-xs font-semibold text-foreground flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Systems Online</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      {/* Main Grid: Sidebar Tabs + Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-[270px_1fr] gap-6 items-start">
         {/* Navigation Sidebar */}
-        <Card className="p-3 h-fit">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1">
+        <Card className="p-2 sm:p-2.5 sticky top-20 border border-border bg-card shadow-xs rounded-2xl">
+          <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
             {groups.map((g) => {
               const Icon = g.icon;
               const isActive = activeTab === g.title;
               return (
                 <button
                   key={g.title}
+                  type="button"
                   onClick={() => setActiveTab(g.title)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-[16px] text-left transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer shrink-0 lg:shrink ${
                     isActive
-                      ? "bg-foreground text-background font-semibold"
+                      ? "bg-foreground text-background font-semibold shadow-xs"
                       : "hover:bg-surface text-muted-foreground hover:text-foreground font-medium"
                   }`}
                 >
-                  <Icon
-                    className={`w-4 h-4 ${isActive ? "text-background" : "text-muted-foreground"}`}
-                    strokeWidth={isActive ? 2.5 : 1.75}
-                  />
-                  <span className="text-[13px] flex-1 truncate">{g.title}</span>
+                  <div
+                    className={`w-7 h-7 rounded-lg grid place-items-center shrink-0 transition-colors ${
+                      isActive
+                        ? "bg-background/20 text-background"
+                        : "bg-surface text-foreground/80 border border-border/40"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" strokeWidth={isActive ? 2.4 : 1.8} />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-1">
+                    <span className="text-[13px] block truncate leading-tight">{g.title}</span>
+                  </div>
                   <ChevronRight
-                    className={`w-3.5 h-3.5 hidden lg:inline-block ${isActive ? "text-background opacity-80" : "text-subtle"}`}
+                    className={`w-3.5 h-3.5 hidden lg:inline-block shrink-0 ${
+                      isActive ? "text-background opacity-90" : "text-subtle opacity-50"
+                    }`}
                   />
                 </button>
               );
             })}
           </div>
+
+          {/* Quick Sign Out Action */}
+          <div className="mt-3 pt-3 border-t border-border/60 hidden lg:block px-1">
+            <button
+              type="button"
+              onClick={() => signOutUser(navigate)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </Card>
 
-        {/* Content Panel */}
-        <div className="flex flex-col gap-4">
+        {/* Content Area */}
+        <div className="space-y-6 min-w-0">
           <AnimatePresence mode="wait">
+            {/* ================= 1. PROFILE TAB ================= */}
             {activeTab === "Profile" && (
               <motion.div
                 key="profile"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
+                className="space-y-6"
               >
-                <Card className="p-5 sm:p-6">
-                  <SectionTitle title="Profile" />
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+                {/* Profile Information Card */}
+                <Card className="p-6 sm:p-7 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-[17px] font-bold text-foreground">Profile Information</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Personal identity, workspace handle, and contact details
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Avatar & Hero Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 mt-5 rounded-2xl bg-surface/50 border border-border/60">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-3xl bg-[#5A82E8]/10 text-[#5A82E8] grid place-items-center text-[20px] font-bold flex-shrink-0">
-                        {profileName
-                          .split(" ")
-                          .map((s) => s[0])
-                          .join("")}
+                      <div className="relative">
+                        <img
+                          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"
+                          alt="Avatar"
+                          className="w-16 h-16 rounded-2xl object-cover ring-2 ring-border"
+                        />
+                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-card" />
                       </div>
                       <div>
                         <div className="text-[16px] font-bold text-foreground">{profileName}</div>
-                        <div className="text-[13px] text-muted-foreground">
-                          {profileRole} · {profilePod}
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {profileRole} • {profilePod}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground/80 mt-1 font-mono">
+                          {profileEmail}
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => toast.info("Image upload dialog opened")}
-                      className="sm:ml-auto h-9 px-4 rounded-xl bg-surface border border-border text-[12px] font-semibold hover:border-foreground/30 transition-all cursor-pointer text-foreground"
-                    >
-                      Change photo
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toast.success("Photo upload dialog opened")}
+                        className="h-8 px-3 rounded-xl bg-surface hover:bg-muted border border-border text-xs font-semibold text-foreground transition-colors cursor-pointer"
+                      >
+                        Change Photo
+                      </button>
+                    </div>
                   </div>
 
-                  <form onSubmit={handleSaveProfile} className="space-y-4">
+                  {/* Form */}
+                  <form onSubmit={handleSaveProfile} className="mt-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Display name
+                      <div>
+                        <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
+                          Full Name
                         </label>
                         <input
+                          type="text"
                           value={profileName}
                           onChange={(e) => setProfileName(e.target.value)}
-                          className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                          className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Email
+                      <div>
+                        <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
+                          Work Email
                         </label>
                         <input
                           type="email"
                           value={profileEmail}
                           onChange={(e) => setProfileEmail(e.target.value)}
-                          className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                          className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Role
+                      <div>
+                        <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
+                          Assigned Role
                         </label>
                         <input
+                          type="text"
                           value={profileRole}
                           onChange={(e) => setProfileRole(e.target.value)}
-                          className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                          className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Pod
+                      <div>
+                        <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
+                          Primary Pod
                         </label>
-                        <input
+                        <select
                           value={profilePod}
                           onChange={(e) => setProfilePod(e.target.value)}
-                          className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
-                        />
+                          className="w-full h-10 px-3 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground cursor-pointer"
+                        >
+                          <option value="Pod Alpha (Design)">Pod Alpha (Design)</option>
+                          <option value="Pod Beta (Motion)">Pod Beta (Motion)</option>
+                          <option value="Pod Gamma (Brand)">Pod Gamma (Brand)</option>
+                          <option value="Pod Delta (Web)">Pod Delta (Web)</option>
+                        </select>
                       </div>
                     </div>
 
-                    <div className="flex justify-end pt-4">
+                    <div>
+                      <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
+                        Timezone
+                      </label>
+                      <input
+                        type="text"
+                        value={profileTimezone}
+                        onChange={(e) => setProfileTimezone(e.target.value)}
+                        className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
+                        Bio / Focus Note
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={profileBio}
+                        onChange={(e) => setProfileBio(e.target.value)}
+                        className="w-full p-3 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground resize-none"
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-2">
                       <button
                         type="submit"
-                        className="h-10 px-6 rounded-xl bg-foreground text-background font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                        className="h-9 px-5 rounded-xl bg-foreground text-background font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                       >
-                        Save Preferences
+                        Save Profile Preferences
                       </button>
                     </div>
                   </form>
                 </Card>
 
-                {/* Account & Active Session */}
-                <Card className="p-5 sm:p-6">
-                  <SectionTitle title="Account Session" />
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+                {/* Session & Sign Out Card */}
+                <Card className="p-6 border border-border bg-card rounded-2xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs font-semibold text-foreground">
-                        Active Workspace Session
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Logged in as {profileEmail}. Sign out anytime to return to the login screen.
+                      <h3 className="text-sm font-bold text-foreground">
+                        Workspace Account Session
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Authenticated as{" "}
+                        <span className="font-medium text-foreground">{profileEmail}</span>. Sign
+                        out anytime to return to login.
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => signOutUser(navigate)}
-                      className="flex items-center gap-2 h-9 px-4 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-semibold transition-colors cursor-pointer w-fit"
+                      className="h-9 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer w-fit"
                     >
                       <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out of Looped</span>
+                      <span>Sign Out of Loooped</span>
                     </button>
                   </div>
                 </Card>
               </motion.div>
             )}
 
+            {/* ================= 2. NOTIFICATIONS TAB ================= */}
             {activeTab === "Notifications" && (
               <motion.div
                 key="notifications"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <Card className="p-6">
-                  <SectionTitle title="Notification Channels" />
-                  <p className="text-xs text-muted-foreground mb-6 -mt-1">
-                    Control how and where you receive project status updates and digest alerts
-                  </p>
+                <Card className="p-6 sm:p-7 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center shrink-0">
+                        <Bell className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h2 className="text-[17px] font-bold text-foreground">
+                          Notification Channels
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          Configure event delivery across browser, email, and synchronized tools
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-col divide-y divide-border/65">
+                    <button
+                      type="button"
+                      onClick={handleSendTestNotification}
+                      className="h-8 px-3 rounded-xl bg-surface hover:bg-muted border border-border text-xs font-semibold text-foreground flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Send className="w-3 h-3 text-amber-500" />
+                      <span>Send Test Alert</span>
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-border/60">
                     {[
                       {
-                        l: "Approvals waiting",
-                        d: "Ping me when work is submitted for my review",
-                        val: notifApprovals,
-                        setter: setNotifApprovals,
+                        label: "Approvals waiting review",
+                        desc: "Instant ping when deliverables are submitted by your team or clients",
+                        value: notifApprovals,
+                        toggle: () => setNotifApprovals(!notifApprovals),
                       },
                       {
-                        l: "Client responses",
-                        d: "Emails and in-app when clients comment",
-                        val: notifClient,
-                        setter: setNotifClient,
+                        label: "Client comments & responses",
+                        desc: "Direct messages and threaded remarks from authorized external guests",
+                        value: notifClient,
+                        toggle: () => setNotifClient(!notifClient),
                       },
                       {
-                        l: "Capacity warnings",
-                        d: "Alerts when any pod exceeds 85% bandwidth",
-                        val: notifCapacity,
-                        setter: setNotifCapacity,
+                        label: "Pod capacity warnings",
+                        desc: "Alert when pod allocation hits or exceeds 85% weekly threshold",
+                        value: notifCapacity,
+                        toggle: () => setNotifCapacity(!notifCapacity),
                       },
                       {
-                        l: "Weekly summary digest",
-                        d: "Receive email reports every Monday, 9:00 am",
-                        val: notifWeekly,
-                        setter: setNotifWeekly,
+                        label: "Slack channel integration",
+                        desc: "Post deliverable status changes directly into #creative-ops",
+                        value: notifSlack,
+                        toggle: () => setNotifSlack(!notifSlack),
                       },
                       {
-                        l: "Slack notifications",
-                        d: "Sync updates instantly inside your designated team channel",
-                        val: notifSlack,
-                        setter: setNotifSlack,
+                        label: "Browser desktop push alerts",
+                        desc: "Send native desktop notifications when tab is in background",
+                        value: notifPush,
+                        toggle: () => setNotifPush(!notifPush),
                       },
                       {
-                        l: "Mobile push alerts",
-                        d: "Send native push notifications via web app browser socket",
-                        val: notifPush,
-                        setter: setNotifPush,
+                        label: "Audio notification chimes",
+                        desc: "Play subtle acoustic chime on urgent mentions and incoming calls",
+                        value: notifSound,
+                        toggle: () => setNotifSound(!notifSound),
                       },
-                    ].map((n) => (
+                    ].map((item) => (
                       <div
-                        key={n.l}
-                        className="flex items-center justify-between py-4 first:pt-0 last:pb-0"
+                        key={item.label}
+                        className="py-3.5 first:pt-2 last:pb-1 flex items-center justify-between gap-4"
                       >
-                        <div className="pr-4">
-                          <div className="text-[14px] font-bold text-foreground">{n.l}</div>
-                          <div className="text-[12px] font-medium text-muted-foreground mt-0.5">
-                            {n.d}
-                          </div>
+                        <div className="pr-2">
+                          <p className="text-[13.5px] font-semibold text-foreground">
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
                         </div>
                         <button
                           type="button"
-                          onClick={() => n.setter(!n.val)}
-                          className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer flex-shrink-0 ${n.val ? "bg-foreground" : "bg-slate-200 dark:bg-[#323238]"}`}
+                          onClick={item.toggle}
+                          className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                            item.value ? "bg-foreground" : "bg-muted-foreground/30"
+                          }`}
                         >
                           <span
-                            className={`block w-5 h-5 rounded-full bg-background transition-transform duration-200 ${n.val ? "translate-x-5" : "translate-x-0"}`}
+                            className={`block w-5 h-5 rounded-full bg-background shadow-xs transition-transform duration-200 ${
+                              item.value ? "translate-x-5" : "translate-x-0"
+                            }`}
                           />
                         </button>
                       </div>
@@ -375,33 +715,52 @@ function SettingsPage() {
                   </div>
                 </Card>
 
-                <Card className="p-6">
-                  <SectionTitle title="Digest Frequency Cadence" />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3">
-                    {["Instant", "Daily", "Weekly"].map((freq) => {
-                      const isSel = digestFrequency === freq;
+                {/* Digest Cadence Card */}
+                <Card className="p-6 border border-border bg-card rounded-2xl">
+                  <h3 className="text-sm font-bold text-foreground">Digest Briefing Cadence</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+                    Choose how often you receive analytical summaries and milestone recaps
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      {
+                        id: "Instant",
+                        title: "Real-Time",
+                        desc: "Dispatched immediately as events occur across all pods",
+                      },
+                      {
+                        id: "Daily",
+                        title: "Daily Digest",
+                        desc: "Consolidated morning briefing at 9:00 AM local time",
+                      },
+                      {
+                        id: "Weekly",
+                        title: "Weekly Review",
+                        desc: "Executive breakdown every Monday morning at 8:30 AM",
+                      },
+                    ].map((cad) => {
+                      const isSel = digestFrequency === cad.id;
                       return (
                         <button
-                          key={freq}
+                          key={cad.id}
+                          type="button"
                           onClick={() => {
-                            setDigestFrequency(freq);
-                            toast.success(`Digest frequency adjusted to ${freq}`);
+                            setDigestFrequency(cad.id);
+                            toast.success(`Digest cadence adjusted to ${cad.title}`);
                           }}
-                          className={`p-4 rounded-xl text-left border transition-all cursor-pointer ${
+                          className={`p-4 rounded-xl text-left border transition-all cursor-pointer relative ${
                             isSel
-                              ? "border-foreground bg-slate-50 dark:bg-[#242428] ring-1 ring-foreground"
-                              : "border-border hover:border-foreground/35 bg-transparent"
+                              ? "bg-foreground/5 border-foreground ring-1 ring-foreground"
+                              : "bg-surface/30 border-border hover:border-foreground/30"
                           }`}
                         >
-                          <div className="text-xs font-bold text-foreground uppercase tracking-wide">
-                            {freq} Updates
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground">{cad.title}</span>
+                            {isSel && <CheckCircle2 className="w-4 h-4 text-foreground shrink-0" />}
                           </div>
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            {freq === "Instant" && "Deliver alerts immediately when events occur"}
-                            {freq === "Daily" &&
-                              "Batch all messages into a single daily briefing at 5 PM"}
-                            {freq === "Weekly" &&
-                              "Bundle stats and weekly accomplishments into a single review"}
+                          <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                            {cad.desc}
                           </p>
                         </button>
                       );
@@ -411,130 +770,352 @@ function SettingsPage() {
               </motion.div>
             )}
 
+            {/* ================= 3. TEAM & PODS TAB ================= */}
             {activeTab === "Team & pods" && (
               <motion.div
                 key="team"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <Card className="p-6">
-                  <SectionTitle title="Team Allocation Overview" />
-                  <p className="text-xs text-muted-foreground mb-6 -mt-1">
-                    Your active team folder and allocation limits
-                  </p>
+                {/* Pod Capacity Overview */}
+                <Card className="p-6 sm:p-7 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center shrink-0">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h2 className="text-[17px] font-bold text-foreground">
+                          Creative Pod Allocations
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          Live capacity usage and project distribution across design squads
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="h-8 px-3 rounded-xl bg-foreground text-background text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      <span>Allocate Member</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
                     {[
                       {
-                        name: "Pod Alpha",
-                        projects: "Q4 Rebrand, Landing Revamp",
-                        usage: 82,
-                        color: "bg-emerald-500",
+                        name: "Pod Alpha (Design)",
+                        projects: "Q4 Rebrand, Helix Landing",
+                        usage: 78,
+                        color: "bg-blue-500",
+                        lead: "Marta Lin",
                       },
                       {
-                        name: "Pod Beta",
-                        projects: "Product Film, Podcast Branding",
-                        usage: 44,
-                        color: "bg-amber-500",
+                        name: "Pod Beta (Motion)",
+                        projects: "Kite Motors Film v3",
+                        usage: 64,
+                        color: "bg-purple-500",
+                        lead: "Ivan Petrov",
                       },
                       {
-                        name: "Pod Gamma",
-                        projects: "Social Pack Q3",
-                        usage: 95,
+                        name: "Pod Gamma (Brand)",
+                        projects: "Meridian Print, Loop FM",
+                        usage: 89,
                         color: "bg-rose-500",
+                        lead: "Sara Davis",
+                      },
+                      {
+                        name: "Pod Delta (Web)",
+                        projects: "Aurora E-commerce Handoff",
+                        usage: 52,
+                        color: "bg-emerald-500",
+                        lead: "Lucas Vance",
                       },
                     ].map((pod) => (
                       <div
                         key={pod.name}
-                        className="p-4 rounded-xl border border-border bg-slate-50/50 dark:bg-[#1c1c20]"
+                        className="p-4 rounded-xl border border-border bg-surface/40 space-y-2.5"
                       >
-                        <div className="flex justify-between items-center mb-2">
-                          <div>
-                            <span className="text-xs font-bold text-foreground">{pod.name}</span>
-                            <span className="text-[10px] text-muted-foreground ml-2 font-medium">
-                              ({pod.projects})
-                            </span>
-                          </div>
-                          <span className="text-xs font-semibold text-foreground">
-                            {pod.usage}% capacity
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-foreground">{pod.name}</span>
+                          <span
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                              pod.usage > 85
+                                ? "bg-rose-500/10 text-rose-600"
+                                : "bg-emerald-500/10 text-emerald-600"
+                            }`}
+                          >
+                            {pod.usage}% Capacity
                           </span>
                         </div>
-                        <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${pod.color}`}
+                            className={`h-full rounded-full ${pod.color} transition-all duration-500`}
                             style={{ width: `${pod.usage}%` }}
                           />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                          <span className="truncate max-w-[170px]">{pod.projects}</span>
+                          <span className="font-medium">Lead: {pod.lead}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </Card>
+
+                {/* Team Members Directory */}
+                <Card className="p-6 border border-border bg-card rounded-2xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        Workspace Members ({members.length})
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Active talent assigned to workspaces, reviews, and pod sprints
+                      </p>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Filter member or pod..."
+                        value={searchMember}
+                        onChange={(e) => setSearchMember(e.target.value)}
+                        className="h-8 px-3 text-xs bg-surface border border-border rounded-xl w-48 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-border/60">
+                    {filteredMembers.map((m) => (
+                      <div
+                        key={m.id}
+                        className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="relative shrink-0">
+                            <img
+                              src={m.avatar}
+                              alt={m.name}
+                              className="w-9 h-9 rounded-full object-cover"
+                            />
+                            <span
+                              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-card ${
+                                m.status === "active" ? "bg-emerald-500" : "bg-amber-500"
+                              }`}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-foreground truncate">
+                                {m.name}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-surface border border-border text-muted-foreground">
+                                {m.role}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-muted-foreground truncate block">
+                              {m.email} •{" "}
+                              <strong className="font-medium text-foreground/80">{m.pod}</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newPod =
+                                m.pod === "Pod Alpha (Design)"
+                                  ? "Pod Beta (Motion)"
+                                  : "Pod Alpha (Design)";
+                              setMembers(
+                                members.map((mem) =>
+                                  mem.id === m.id ? { ...mem, pod: newPod } : mem,
+                                ),
+                              );
+                              toast.success(`Reallocated ${m.name} to ${newPod}`);
+                            }}
+                            className="h-7 px-2.5 rounded-lg bg-surface hover:bg-muted border border-border text-[11px] font-medium text-foreground transition-colors cursor-pointer"
+                          >
+                            Reassign Pod
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Inline Invite Modal */}
+                {isInviteModalOpen && (
+                  <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-foreground">Allocate Team Member</h3>
+                        <button
+                          type="button"
+                          onClick={() => setIsInviteModalOpen(false)}
+                          className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleInviteMember} className="space-y-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-foreground/80 block mb-1">
+                            Full Name
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            placeholder="e.g. Jordan Hayes"
+                            value={inviteName}
+                            onChange={(e) => setInviteName(e.target.value)}
+                            className="w-full h-9 px-3 bg-surface border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-foreground/80 block mb-1">
+                            Email Address
+                          </label>
+                          <input
+                            required
+                            type="email"
+                            placeholder="jordan@loooped.studio"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            className="w-full h-9 px-3 bg-surface border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] font-semibold text-foreground/80 block mb-1">
+                              Role
+                            </label>
+                            <input
+                              type="text"
+                              value={inviteRole}
+                              onChange={(e) => setInviteRole(e.target.value)}
+                              className="w-full h-9 px-3 bg-surface border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-foreground/80 block mb-1">
+                              Assign Pod
+                            </label>
+                            <select
+                              value={invitePod}
+                              onChange={(e) => setInvitePod(e.target.value)}
+                              className="w-full h-9 px-2 bg-surface border border-border rounded-xl text-xs text-foreground cursor-pointer focus:outline-none"
+                            >
+                              <option value="Pod Alpha (Design)">Pod Alpha (Design)</option>
+                              <option value="Pod Beta (Motion)">Pod Beta (Motion)</option>
+                              <option value="Pod Gamma (Brand)">Pod Gamma (Brand)</option>
+                              <option value="Pod Delta (Web)">Pod Delta (Web)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsInviteModalOpen(false)}
+                            className="h-8 px-3 rounded-xl bg-surface border border-border text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="h-8 px-4 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 cursor-pointer shadow-xs"
+                          >
+                            Add to Pod
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
+            {/* ================= 4. PERMISSIONS TAB ================= */}
             {activeTab === "Permissions" && (
               <motion.div
                 key="permissions"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <Card className="p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="w-5 h-5 text-foreground" />
-                    <SectionTitle title="Role Permissions Profile" />
+                <Card className="p-6 sm:p-7 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 grid place-items-center shrink-0">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-[17px] font-bold text-foreground">
+                        Role Permissions Profile
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Configure authorization matrices, client folder clearances, and budget
+                        visibility
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-6 -mt-1">
-                    Manage role-based access control, tier clearances, and validation rules for
-                    submitted timesheets and client files
-                  </p>
 
-                  {/* Role Selector Grid */}
+                  {/* Role Selector Tabs */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
                     {["Viewer", "Designer", "Manager", "Admin"].map((role) => {
                       const isSel = selectedRoleGroup === role;
                       return (
                         <button
                           key={role}
+                          type="button"
                           onClick={() => {
                             setSelectedRoleGroup(role);
-                            // Adjust toggles for mock feel
                             if (role === "Admin") {
                               setPermApprovals(true);
                               setPermInvite(true);
                               setPermClientFolders(true);
                               setPermEditBudgets(true);
                               setPermAccessBilling(true);
+                              setPermExportAudit(true);
                             } else if (role === "Manager") {
                               setPermApprovals(true);
                               setPermInvite(true);
                               setPermClientFolders(true);
                               setPermEditBudgets(false);
                               setPermAccessBilling(false);
+                              setPermExportAudit(true);
                             } else if (role === "Designer") {
                               setPermApprovals(false);
                               setPermInvite(false);
                               setPermClientFolders(true);
                               setPermEditBudgets(false);
                               setPermAccessBilling(false);
+                              setPermExportAudit(false);
                             } else {
                               setPermApprovals(false);
                               setPermInvite(false);
                               setPermClientFolders(false);
                               setPermEditBudgets(false);
                               setPermAccessBilling(false);
+                              setPermExportAudit(false);
                             }
                             toast.success(`Clearance matrix adjusted for: ${role}`);
                           }}
-                          className={`py-2.5 rounded-xl text-center border text-xs font-bold transition-all cursor-pointer ${
+                          className={`py-2 px-3 rounded-xl text-center border text-xs font-bold transition-all cursor-pointer ${
                             isSel
-                              ? "bg-foreground text-background border-foreground shadow-sm"
-                              : "border-border hover:border-foreground/35 text-muted-foreground hover:text-foreground bg-transparent"
+                              ? "bg-foreground text-background border-foreground shadow-xs"
+                              : "border-border hover:border-foreground/30 bg-surface/30 text-muted-foreground hover:text-foreground"
                           }`}
                         >
                           {role}
@@ -543,191 +1124,127 @@ function SettingsPage() {
                     })}
                   </div>
 
-                  <div className="space-y-4 divide-y divide-border">
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <div className="text-[13.5px] font-bold text-foreground">
-                          Can Review Approvals
-                        </div>
-                        <p className="text-[11.5px] text-muted-foreground">
-                          Authorize time logs, milestones, and design submissions
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPermApprovals(!permApprovals)}
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${permApprovals ? "bg-foreground" : "bg-slate-200 dark:bg-[#323238]"}`}
-                      >
-                        <span
-                          className={`block w-5 h-5 rounded-full bg-background transition-transform duration-200 ${permApprovals ? "translate-x-5" : ""}`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <div className="text-[13.5px] font-bold text-foreground">
-                          Can Invite Teammates
-                        </div>
-                        <p className="text-[11.5px] text-muted-foreground">
-                          Add new producers, developers, or clients directly into workspaces
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPermInvite(!permInvite)}
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${permInvite ? "bg-foreground" : "bg-slate-200 dark:bg-[#323238]"}`}
-                      >
-                        <span
-                          className={`block w-5 h-5 rounded-full bg-background transition-transform duration-200 ${permInvite ? "translate-x-5" : ""}`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <div className="text-[13.5px] font-bold text-foreground">
-                          Can Manage Client Folders
-                        </div>
-                        <p className="text-[11.5px] text-muted-foreground">
-                          Create, archive, and modify client brand directories
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPermClientFolders(!permClientFolders)}
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${permClientFolders ? "bg-foreground" : "bg-slate-200 dark:bg-[#323238]"}`}
-                      >
-                        <span
-                          className={`block w-5 h-5 rounded-full bg-background transition-transform duration-200 ${permClientFolders ? "translate-x-5" : ""}`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <div className="text-[13.5px] font-bold text-foreground">
-                          Can Edit Project Budgets
-                        </div>
-                        <p className="text-[11.5px] text-muted-foreground">
-                          Modify monetary thresholds, hour quotas, and retainer fees
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPermEditBudgets(!permEditBudgets)}
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${permEditBudgets ? "bg-foreground" : "bg-slate-200 dark:bg-[#323238]"}`}
-                      >
-                        <span
-                          className={`block w-5 h-5 rounded-full bg-background transition-transform duration-200 ${permEditBudgets ? "translate-x-5" : ""}`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <div className="text-[13.5px] font-bold text-foreground">
-                          Can Access Billing Reports
-                        </div>
-                        <p className="text-[11.5px] text-muted-foreground">
-                          Read sensitive financial statements, margin yields, and pricing charts
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPermAccessBilling(!permAccessBilling)}
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${permAccessBilling ? "bg-foreground" : "bg-slate-200 dark:bg-[#323238]"}`}
-                      >
-                        <span
-                          className={`block w-5 h-5 rounded-full bg-background transition-transform duration-200 ${permAccessBilling ? "translate-x-5" : ""}`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6">
-                  <SectionTitle title="Sign-Off Approval Tier Structure" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="divide-y divide-border/60">
                     {[
                       {
-                        tier: "single",
-                        label: "Single-Signature Approval",
-                        desc: "Logs are immediately authorized once any Manager signs off. Ideal for fast-moving workflows.",
+                        label: "Authorize & Review Approvals",
+                        desc: "Approve or reject client milestones, time logs, and delivered file bundles",
+                        val: permApprovals,
+                        toggle: () => setPermApprovals(!permApprovals),
                       },
                       {
-                        tier: "double",
-                        label: "Double-Signature Validation",
-                        desc: "Requires clearance from both a design lead and an account producer before final log submission.",
+                        label: "Workspace Member Invitations",
+                        desc: "Add external collaborators or internal team members to workspaces",
+                        val: permInvite,
+                        toggle: () => setPermInvite(!permInvite),
                       },
-                    ].map((item) => (
-                      <button
-                        key={item.tier}
-                        onClick={() => {
-                          setApprovalTiers(item.tier);
-                          toast.success(`Approval pattern set to ${item.label}`);
-                        }}
-                        className={`p-4 rounded-xl text-left border transition-all cursor-pointer ${
-                          approvalTiers === item.tier
-                            ? "border-foreground bg-slate-50 dark:bg-[#242428] ring-1 ring-foreground"
-                            : "border-border hover:border-foreground/35 bg-transparent"
-                        }`}
+                      {
+                        label: "Client Folder Management",
+                        desc: "Create, archive, and update dedicated client brand asset portals",
+                        val: permClientFolders,
+                        toggle: () => setPermClientFolders(!permClientFolders),
+                      },
+                      {
+                        label: "Budget & Rate Card Editing",
+                        desc: "Modify allocated contract values, hourly rate tiers, and project caps",
+                        val: permEditBudgets,
+                        toggle: () => setPermEditBudgets(!permEditBudgets),
+                      },
+                      {
+                        label: "Access Invoicing & Billing Feeds",
+                        desc: "View financial logs, export revenue statements, and stripe payment status",
+                        val: permAccessBilling,
+                        toggle: () => setPermAccessBilling(!permAccessBilling),
+                      },
+                      {
+                        label: "Export Audit Logs & Error Telemetry",
+                        desc: "Download activity logs, error reports, and Sentry session replays",
+                        val: permExportAudit,
+                        toggle: () => setPermExportAudit(!permExportAudit),
+                      },
+                    ].map((p) => (
+                      <div
+                        key={p.label}
+                        className="py-3.5 first:pt-2 last:pb-1 flex items-center justify-between gap-4"
                       >
-                        <div className="text-xs font-bold text-foreground">{item.label}</div>
-                        <p className="text-[11px] text-muted-foreground mt-1">{item.desc}</p>
-                      </button>
+                        <div className="pr-2">
+                          <p className="text-[13.5px] font-semibold text-foreground">{p.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={p.toggle}
+                          className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                            p.val ? "bg-foreground" : "bg-muted-foreground/30"
+                          }`}
+                        >
+                          <span
+                            className={`block w-5 h-5 rounded-full bg-background shadow-xs transition-transform duration-200 ${
+                              p.val ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </Card>
               </motion.div>
             )}
 
+            {/* ================= 5. APPEARANCE TAB ================= */}
             {activeTab === "Appearance" && (
               <motion.div
                 key="appearance"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <Card className="p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Palette className="w-5 h-5 text-foreground" />
-                    <SectionTitle title="App Interface Themes" />
+                <Card className="p-6 sm:p-7 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 grid place-items-center shrink-0">
+                      <Palette className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-[17px] font-bold text-foreground">
+                        Canvas & Color Theme
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Customize visual contrast, typography density, and workspace aesthetics
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-6 -mt-1">
-                    Select a look that keeps you focused during late-night sprints or client reviews
-                  </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Theme Selector */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     {[
                       {
                         id: "light",
-                        name: "Aero Light Theme",
-                        desc: "Pristine white canvas",
-                        colors: "from-slate-100 to-white",
+                        name: "Aero Light Canvas",
+                        desc: "Pristine high-contrast daylight theme",
+                        gradient: "from-slate-100 to-white",
                       },
                       {
                         id: "charcoal",
                         name: "Charcoal Dark Theme",
-                        desc: "Subtle workspace charcoal",
-                        colors: "from-[#242428] to-[#1c1c1f]",
+                        desc: "Subtle workspace obsidian palette",
+                        gradient: "from-[#242428] to-[#1c1c1f]",
                       },
                       {
                         id: "cosmic",
-                        name: "Cosmic Slate Theme",
-                        desc: "Aesthetic cosmic depth",
-                        colors: "from-[#111111] to-[#0d0d0f]",
+                        name: "Cosmic Midnight",
+                        desc: "Aesthetic low-light studio mode",
+                        gradient: "from-[#111111] to-[#0a0a0c]",
                       },
                     ].map((theme) => {
                       const isSel = selectedTheme === theme.id;
                       return (
                         <button
                           key={theme.id}
+                          type="button"
                           onClick={() => {
                             setSelectedTheme(theme.id);
-                            // Trigger system theme adjustment if desired, otherwise mock is super elegant
                             if (theme.id === "light") {
                               document.documentElement.classList.remove("dark");
                             } else {
@@ -735,21 +1252,21 @@ function SettingsPage() {
                             }
                             toast.success(`Applied ${theme.name}`);
                           }}
-                          className={`p-4 rounded-2xl text-left border transition-all cursor-pointer relative overflow-hidden group ${
+                          className={`p-4 rounded-xl text-left border transition-all cursor-pointer relative overflow-hidden group ${
                             isSel
-                              ? "border-foreground bg-slate-50 dark:bg-[#242428] ring-1 ring-foreground"
-                              : "border-border hover:border-foreground/35 bg-transparent"
+                              ? "border-foreground bg-foreground/5 ring-1 ring-foreground"
+                              : "border-border hover:border-foreground/30 bg-surface/30"
                           }`}
                         >
                           <div
-                            className={`w-full h-20 rounded-xl mb-3 bg-gradient-to-br ${theme.colors} border border-border flex items-end p-2`}
+                            className={`w-full h-16 rounded-lg mb-3 bg-gradient-to-br ${theme.gradient} border border-border flex items-end p-2`}
                           >
-                            <div className="w-6 h-1 bg-foreground/30 rounded-full" />
+                            <div className="w-8 h-1.5 bg-foreground/30 rounded-full" />
                           </div>
                           <div className="text-xs font-bold text-foreground">{theme.name}</div>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{theme.desc}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{theme.desc}</p>
                           {isSel && (
-                            <div className="absolute right-3 bottom-3 w-5 h-5 bg-foreground text-background rounded-full grid place-items-center">
+                            <div className="absolute right-3 top-3 w-5 h-5 bg-foreground text-background rounded-full grid place-items-center">
                               <Check className="w-3 h-3" strokeWidth={3} />
                             </div>
                           )}
@@ -759,93 +1276,113 @@ function SettingsPage() {
                   </div>
                 </Card>
 
-                <Card className="p-6">
-                  <SectionTitle title="Layout Density" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Layout Density & Sidebar */}
+                <Card className="p-6 border border-border bg-card rounded-2xl">
+                  <h3 className="text-sm font-bold text-foreground">Layout Density & Sidebar</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+                    Adjust interface padding and navigation behavior
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     {[
                       {
                         id: "compact",
-                        name: "Compact Density",
-                        desc: "Tight spacing and micro-padding ideal for dense analytics dashboards",
+                        title: "Compact Density",
+                        desc: "Tighter row heights and micro-padding ideal for dense task lists",
                       },
                       {
                         id: "spacious",
-                        name: "Spacious Density",
-                        desc: "Generous breathing space and negative margin pairings for premium clarity",
+                        title: "Spacious Density",
+                        desc: "Generous breathing space and elegant typography hierarchy",
                       },
-                    ].map((dens) => {
-                      const isSel = selectedDensity === dens.id;
+                    ].map((den) => {
+                      const isSel = selectedDensity === den.id;
                       return (
                         <button
-                          key={dens.id}
+                          key={den.id}
+                          type="button"
                           onClick={() => {
-                            setSelectedDensity(dens.id);
-                            toast.success(`Density updated to ${dens.name}`);
+                            setSelectedDensity(den.id);
+                            toast.success(`Density: ${den.title}`);
                           }}
-                          className={`p-4 rounded-xl text-left border transition-all cursor-pointer ${
+                          className={`p-3.5 rounded-xl text-left border transition-all cursor-pointer ${
                             isSel
-                              ? "border-foreground bg-slate-50 dark:bg-[#242428] ring-1 ring-foreground"
-                              : "border-border hover:border-foreground/35 bg-transparent"
+                              ? "border-foreground bg-foreground/5 ring-1 ring-foreground"
+                              : "border-border hover:border-foreground/30 bg-surface/30"
                           }`}
                         >
                           <span className="text-xs font-bold text-foreground block">
-                            {dens.name}
+                            {den.title}
                           </span>
                           <span className="text-[11px] text-muted-foreground mt-1 block">
-                            {dens.desc}
+                            {den.desc}
                           </span>
                         </button>
                       );
                     })}
                   </div>
-                </Card>
 
-                <Card className="p-6">
-                  <SectionTitle title="Sidebar Configuration" />
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    {[
-                      { id: "expanded", name: "Expanded Title View" },
-                      { id: "icons", name: "Minimalist Icons Only" },
-                      { id: "collapsed", name: "Auto-Hide Drawer" },
-                    ].map((opt) => {
-                      const isSel = sidebarExpanded === opt.id;
-                      return (
+                  <div className="pt-2 border-t border-border/60">
+                    <span className="text-[11.5px] font-semibold text-foreground/80 block mb-2">
+                      Sidebar Presentation
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: "expanded", label: "Full Expanded" },
+                        { id: "icons", label: "Icons Only" },
+                        { id: "drawer", label: "Auto Drawer" },
+                      ].map((sb) => (
                         <button
-                          key={opt.id}
+                          key={sb.id}
+                          type="button"
                           onClick={() => {
-                            setSidebarExpanded(opt.id);
-                            toast.success(`Sidebar style: ${opt.name}`);
+                            setSidebarExpanded(sb.id);
+                            toast.success(`Sidebar style: ${sb.label}`);
                           }}
-                          className={`py-3 px-4 rounded-xl text-center border text-xs font-semibold transition-all cursor-pointer ${
-                            isSel
-                              ? "border-foreground bg-slate-50 dark:bg-[#242428] text-foreground"
-                              : "border-border hover:border-foreground/35 text-muted-foreground hover:text-foreground"
+                          className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition-all cursor-pointer ${
+                            sidebarExpanded === sb.id
+                              ? "bg-foreground text-background border-foreground shadow-xs"
+                              : "border-border bg-surface/30 text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          {opt.name}
+                          {sb.label}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
                 </Card>
               </motion.div>
             )}
 
+            {/* ================= 6. SECURITY TAB ================= */}
             {activeTab === "Security" && (
               <motion.div
                 key="security"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-6"
               >
                 {/* Password Form */}
-                <Card className="p-5 sm:p-6">
-                  <SectionTitle title="Update Password" />
+                <Card className="p-6 sm:p-7 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 grid place-items-center shrink-0">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-[17px] font-bold text-foreground">
+                        Password & Credentials
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Keep your workspace credentials secure with regular key rotations
+                      </p>
+                    </div>
+                  </div>
+
                   <form onSubmit={handleSaveSecurity} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                    <div>
+                      <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
                         Current Password
                       </label>
                       <input
@@ -853,153 +1390,184 @@ function SettingsPage() {
                         placeholder="••••••••••••"
                         value={currentPass}
                         onChange={(e) => setCurrentPass(e.target.value)}
-                        className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                        className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
                       />
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      <div>
+                        <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
                           New Password
                         </label>
                         <input
                           type="password"
-                          placeholder="At least 8 characters"
+                          placeholder="Min. 8 characters"
                           value={newPass}
                           onChange={(e) => setNewPass(e.target.value)}
-                          className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                          className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      <div>
+                        <label className="text-[11.5px] font-semibold text-foreground/80 block mb-1.5">
                           Confirm New Password
                         </label>
                         <input
                           type="password"
-                          placeholder="Re-type new password"
+                          placeholder="Re-enter new password"
                           value={confirmPass}
                           onChange={(e) => setConfirmPass(e.target.value)}
-                          className="w-full h-11 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                          className="w-full h-10 px-3.5 bg-surface/40 border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-foreground/20 text-foreground"
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end pt-2">
+
+                    <div className="flex justify-end pt-1">
                       <button
                         type="submit"
-                        className="h-10 px-5 rounded-xl bg-foreground text-background font-semibold text-xs shadow-sm hover:opacity-90 cursor-pointer"
+                        className="h-9 px-5 rounded-xl bg-foreground text-background font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                       >
-                        Change Password
+                        Update Password
                       </button>
                     </div>
                   </form>
                 </Card>
 
-                {/* API Keys Panel */}
-                <Card className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                {/* Developer API Tokens */}
+                <Card className="p-6 border border-border bg-card rounded-2xl">
+                  <div className="flex items-center justify-between gap-3 mb-2">
                     <div>
-                      <SectionTitle title="Developer API Integration Tokens" />
-                      <p className="text-xs text-muted-foreground -mt-1">
-                        Generate live keys to pipe workspace stats, time logs, or calendar feeds
-                        into external APIs.
+                      <h3 className="text-sm font-bold text-foreground">
+                        Developer API Integration Tokens
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Generate scoped tokens to pipe approvals, calendar schedules, or asset logs
+                        to external tools
                       </p>
                     </div>
                   </div>
 
-                  <form onSubmit={handleCreateApiKey} className="flex gap-2 mb-6">
+                  <form
+                    onSubmit={handleCreateApiKey}
+                    className="flex flex-col sm:flex-row gap-2 my-4"
+                  >
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Notion Sync Integration, Webhook Endpoint..."
+                      placeholder="e.g. Notion Sync, Slack Bot, Webhook..."
                       value={newKeyName}
                       onChange={(e) => setNewKeyName(e.target.value)}
-                      className="flex-1 h-10 px-3.5 bg-slate-50 dark:bg-[#151518] border border-border/60 rounded-xl text-xs font-semibold focus:outline-none focus:border-foreground/30 text-foreground"
+                      className="flex-1 h-9 px-3.5 bg-surface/40 border border-border rounded-xl text-xs text-foreground focus:outline-none"
                     />
+                    <select
+                      value={newKeyScope}
+                      onChange={(e) => setNewKeyScope(e.target.value)}
+                      className="h-9 px-3 bg-surface/40 border border-border rounded-xl text-xs text-foreground cursor-pointer focus:outline-none"
+                    >
+                      <option value="read_write">Full Access (Read/Write)</option>
+                      <option value="read_only">Read-Only Access</option>
+                    </select>
                     <button
                       type="submit"
-                      className="h-10 px-4 rounded-xl bg-foreground text-background font-semibold text-xs hover:opacity-90 cursor-pointer flex items-center gap-1.5 shrink-0"
+                      className="h-9 px-4 rounded-xl bg-foreground text-background font-semibold text-xs hover:opacity-90 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
                     >
-                      <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Generate Token
+                      <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      <span>Generate Token</span>
                     </button>
                   </form>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {apiKeys.map((key) => (
                       <div
-                        key={key.name}
-                        className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-slate-50/40 dark:bg-[#151518]/60"
+                        key={key.id}
+                        className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-surface/30 gap-3"
                       >
-                        <div>
-                          <div className="text-xs font-bold text-foreground">{key.name}</div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <code className="text-[10px] font-mono text-muted-foreground bg-slate-100 dark:bg-[#242428] px-1.5 py-0.5 rounded">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-foreground truncate">
+                              {key.name}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-surface border border-border text-muted-foreground font-mono">
+                              {key.scope}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
                               {key.prefix}
                             </code>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyKey(key.prefix)}
+                              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                              title="Copy token"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
                             <span className="text-[10px] text-muted-foreground">
-                              Created {key.created}
+                              • Created {key.created}
                             </span>
                           </div>
                         </div>
+
                         <button
                           type="button"
-                          onClick={() => handleDeleteApiKey(key.name)}
-                          className="w-8 h-8 rounded-lg hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 text-muted-foreground grid place-items-center transition-colors cursor-pointer"
+                          onClick={() => handleDeleteApiKey(key.id, key.name)}
+                          className="p-1.5 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 transition-colors cursor-pointer"
                           title="Revoke key"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
-                    {apiKeys.length === 0 && (
-                      <div className="text-center py-6 border border-dashed border-border rounded-xl text-xs text-muted-foreground">
-                        No active API keys found. Generate one above.
-                      </div>
-                    )}
                   </div>
                 </Card>
 
-                {/* Session Management */}
-                <Card className="p-6">
-                  <SectionTitle title="Session Tracking" />
-                  <p className="text-xs text-muted-foreground mb-4 -mt-1">
-                    Manage active device entries logged into your Loooped Account
+                {/* Session Tracking Card */}
+                <Card className="p-6 border border-border bg-card rounded-2xl">
+                  <h3 className="text-sm font-bold text-foreground">Active Workspace Sessions</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+                    Authorized browser connections and active login devices
                   </p>
-                  <div className="space-y-3">
+
+                  <div className="space-y-2.5">
                     {[
                       {
                         icon: Monitor,
-                        device: "Chrome on macOS",
-                        location: "Cupertino, CA",
-                        status: "Active Now",
-                        color: "text-emerald-500 font-bold bg-emerald-500/10 border-emerald-500/20",
+                        device: "Chrome on macOS (Sonoma)",
+                        location: "San Francisco, CA • 192.168.1.102",
+                        status: "Current Session",
+                        isCurrent: true,
                       },
                       {
                         icon: Smartphone,
                         device: "Safari on iPhone 15 Pro",
-                        location: "San Jose, CA",
-                        status: "Logged In 2 hrs ago",
-                        color:
-                          "text-muted-foreground bg-slate-100 dark:bg-[#242428] border-border/60",
+                        location: "San Jose, CA • 10.0.0.45",
+                        status: "Active 2h ago",
+                        isCurrent: false,
                       },
                     ].map((ses, i) => {
                       const Icon = ses.icon;
                       return (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-3 rounded-xl border border-border"
+                          className="flex items-center justify-between p-3 rounded-xl border border-border bg-surface/30"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-surface grid place-items-center">
+                            <div className="w-8 h-8 rounded-lg bg-surface grid place-items-center">
                               <Icon className="w-4 h-4 text-muted-foreground" />
                             </div>
                             <div>
                               <div className="text-xs font-bold text-foreground">{ses.device}</div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">
+                              <div className="text-[11px] text-muted-foreground mt-0.5">
                                 {ses.location}
                               </div>
                             </div>
                           </div>
                           <span
-                            className={`px-2 py-0.5 border text-[9px] uppercase tracking-wider rounded-full ${ses.color}`}
+                            className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
+                              ses.isCurrent
+                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                : "bg-surface text-muted-foreground border-border"
+                            }`}
                           >
                             {ses.status}
                           </span>
@@ -1008,263 +1576,20 @@ function SettingsPage() {
                     })}
                   </div>
                 </Card>
-
-                {/* Security Health Status */}
-                <Card className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center shrink-0">
-                        <Shield className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-foreground">
-                            Security & Error Telemetry Status
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            Active & Protected
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Sentry monitoring active for org <strong>sandesigns</strong>, project{" "}
-                          <strong>looped-v2</strong>
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("Status")}
-                      className="h-9 px-4 rounded-xl bg-surface border border-border text-xs font-semibold hover:border-foreground/30 text-foreground flex items-center gap-1.5 cursor-pointer shrink-0 transition-all"
-                    >
-                      <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>View System Status</span>
-                    </button>
-                  </div>
-                </Card>
               </motion.div>
             )}
 
+            {/* ================= 7. STATUS TAB ================= */}
             {activeTab === "Status" && (
               <motion.div
                 key="status"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                {/* Top Operational Status Banner */}
-                <Card className="p-5 sm:p-6 border border-emerald-500/20 bg-emerald-500/[0.03]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center shrink-0">
-                        <Radio className="w-5 h-5 animate-pulse" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-base font-bold text-foreground">
-                            All Systems Operational
-                          </h2>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            99.98% UPTIME
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Zero incidents reported. Real-time error monitoring active via Sentry
-                          SaaS.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toast.success("Health check re-evaluated: All systems optimal.");
-                        }}
-                        className="h-9 px-3.5 rounded-xl bg-surface border border-border hover:border-foreground/30 text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Recheck</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Quick Metric Pills */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-border">
-                    <div className="p-3 rounded-xl bg-surface/60 border border-border/80">
-                      <div className="text-[11px] font-semibold text-muted-foreground">
-                        Uptime (90d)
-                      </div>
-                      <div className="text-sm font-bold text-foreground mt-0.5 font-mono">
-                        99.98%
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-surface/60 border border-border/80">
-                      <div className="text-[11px] font-semibold text-muted-foreground">
-                        Client Response
-                      </div>
-                      <div className="text-sm font-bold text-foreground mt-0.5 font-mono">16ms</div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-surface/60 border border-border/80">
-                      <div className="text-[11px] font-semibold text-muted-foreground">
-                        Sentry Health
-                      </div>
-                      <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                        Connected
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-surface/60 border border-border/80">
-                      <div className="text-[11px] font-semibold text-muted-foreground">
-                        Active Outages
-                      </div>
-                      <div className="text-sm font-bold text-foreground mt-0.5 font-mono">0</div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Sentry Configuration Card */}
-                <Card className="p-5 sm:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Bug className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        <SectionTitle title="Sentry Error Monitoring" />
-                      </div>
-                      <p className="text-xs text-muted-foreground -mt-1">
-                        Configured for organization{" "}
-                        <strong className="text-foreground font-semibold">sandesigns</strong>,
-                        project <strong className="text-foreground font-semibold">looped-v2</strong>
-                      </p>
-                    </div>
-
-                    <a
-                      href="https://sandesigns.sentry.io/issues/?project=looped-v2"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="h-8 px-3 rounded-xl bg-foreground text-background text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
-                    >
-                      <span>Sentry Issues</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
-                    <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-[#151518]/60 border border-border">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Organization
-                      </div>
-                      <div className="text-xs font-mono font-bold text-foreground mt-1">
-                        sandesigns
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-[#151518]/60 border border-border">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Project
-                      </div>
-                      <div className="text-xs font-mono font-bold text-foreground mt-1">
-                        looped-v2
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-[#151518]/60 border border-border">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        SDK Status
-                      </div>
-                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Initialized
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => navigate({ to: "/sentry-example-page" })}
-                      className="h-9 px-4 rounded-xl bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Bug className="w-3.5 h-3.5" />
-                      <span>Visit /sentry-example-page</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        try {
-                          // @ts-expect-error test undefined function
-                          window.myUndefinedFunction();
-                        } catch (err: unknown) {
-                          const error = err as Error;
-                          const eventId = Sentry.captureException(error);
-                          toast.error("myUndefinedFunction() triggered & captured by Sentry!", {
-                            description: `Event ID: ${eventId || "captured"}`,
-                          });
-                        }
-                      }}
-                      className="h-9 px-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-xs font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Trigger Sample Error</span>
-                    </button>
-                  </div>
-                </Card>
-
-                {/* Services Telemetry List */}
-                <Card className="p-5 sm:p-6">
-                  <SectionTitle title="Services & Infrastructure" />
-                  <div className="space-y-2.5 mt-3">
-                    {[
-                      {
-                        name: "Frontend Client & TanStack Router",
-                        type: "Edge / Client SPA",
-                        latency: "14ms",
-                        status: "Operational",
-                      },
-                      {
-                        name: "Sentry Error Monitoring Pipeline",
-                        type: "sandesigns / looped-v2",
-                        latency: "38ms",
-                        status: "Operational",
-                      },
-                      {
-                        name: "Application Server Gateway",
-                        type: "Express Server / Node",
-                        latency: "22ms",
-                        status: "Operational",
-                      },
-                      {
-                        name: "Workspace Authentication & Sessions",
-                        type: "Auth Service",
-                        latency: "19ms",
-                        status: "Operational",
-                      },
-                    ].map((service, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-slate-50/40 dark:bg-[#151518]/60"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-surface grid place-items-center">
-                            <Server className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-foreground">{service.name}</div>
-                            <div className="text-[11px] text-muted-foreground">{service.type}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-[11px] font-mono text-muted-foreground hidden sm:inline">
-                            {service.latency}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            {service.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+                <BetterStackStatus />
               </motion.div>
             )}
           </AnimatePresence>

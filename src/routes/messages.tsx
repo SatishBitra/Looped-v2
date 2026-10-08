@@ -34,7 +34,6 @@ import { INITIAL_THREADS, INITIAL_MEMBERS } from "@/components/messages/data";
 import { CreateGroupModal } from "@/components/messages/create-group-modal";
 import { GroupSettingsModal } from "@/components/messages/group-settings-modal";
 import { AddMemberModal } from "@/components/messages/add-member-modal";
-import { VoiceCallModal } from "@/components/messages/voice-call-modal";
 import { VideoCallModal } from "@/components/messages/video-call-modal";
 import { GroupInfoPanel } from "@/components/messages/group-info-panel";
 import { toast } from "sonner";
@@ -64,16 +63,16 @@ export function MessagesPage() {
 
   // Selected thread
   const [selectedThreadId, setSelectedThreadId] = useState<string>("thread-group-design");
-  const [activeCategory, setActiveCategory] = useState<"all" | "inbox" | "explore" | "groups">(
-    "all",
-  );
+  const [activeCategory, setActiveCategory] = useState<
+    "all" | "inbox" | "explore" | "groups" | "clients"
+  >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "unread" | "starred">("newest");
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
-  // Layout states
+  // Layout states: by default, do NOT open description panel on right; expand chat interface canvas
   const [showChatOnMobile, setShowChatOnMobile] = useState(false);
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
   // Message input state
   const [inputText, setInputText] = useState("");
@@ -86,7 +85,6 @@ export function MessagesPage() {
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -128,11 +126,17 @@ export function MessagesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Filter counts
+  const allCount = threads.length;
+  const groupsCount = useMemo(() => threads.filter((t) => t.type === "group").length, [threads]);
+  const clientsCount = useMemo(() => threads.filter((t) => t.isClient).length, [threads]);
+
   // Filter threads
   const filteredThreads = useMemo(() => {
     return threads
       .filter((t) => {
         if (activeCategory === "groups" && t.type !== "group") return false;
+        if (activeCategory === "clients" && !t.isClient) return false;
         if (activeCategory === "inbox" && t.type === "group") return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
@@ -395,13 +399,13 @@ export function MessagesPage() {
               </div>
             </div>
 
-            {/* Filter Tabs matching Screenshot: [ All 234 ⌵ ] [ Newest ⌵ ] */}
+            {/* Filter Tabs: [ All ] [ Groups ] [ Clients ] [ Newest ⌵ ] */}
             <div className="px-4 pb-2 flex items-center justify-between gap-2 border-b border-[#E7E7EC] dark:border-[#323238]">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setActiveCategory("all")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeCategory === "all"
                       ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
                       : "text-muted-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
@@ -415,20 +419,50 @@ export function MessagesPage() {
                         : "bg-[#EAEAEF] dark:bg-[#2e2e34] text-muted-foreground"
                     }`}
                   >
-                    234
+                    {allCount}
                   </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveCategory("groups")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeCategory === "groups"
                       ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
                       : "text-muted-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
                   }`}
                 >
-                  Groups
+                  <span>Groups</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                      activeCategory === "groups"
+                        ? "bg-white/20 dark:bg-[#111111]/20 text-white dark:text-[#111111]"
+                        : "bg-[#EAEAEF] dark:bg-[#2e2e34] text-muted-foreground"
+                    }`}
+                  >
+                    {groupsCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory("clients")}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    activeCategory === "clients"
+                      ? "bg-[#111111] dark:bg-white text-white dark:text-[#111111] shadow-xs"
+                      : "text-muted-foreground hover:bg-[#F4F4F7] dark:hover:bg-[#1a1a1c]"
+                  }`}
+                >
+                  <span>Clients</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                      activeCategory === "clients"
+                        ? "bg-white/20 dark:bg-[#111111]/20 text-white dark:text-[#111111]"
+                        : "bg-[#EAEAEF] dark:bg-[#2e2e34] text-muted-foreground"
+                    }`}
+                  >
+                    {clientsCount}
+                  </span>
                 </button>
               </div>
 
@@ -513,56 +547,40 @@ export function MessagesPage() {
                       {t.isOnline && (
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#242428]" />
                       )}
-
-                      {/* Service Badge (e.g. Messenger, Gmail, WhatsApp) */}
-                      {t.serviceBadge && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-blue-500 text-white text-[8px] font-bold grid place-items-center ring-1 ring-white dark:ring-[#242428]">
-                          {t.serviceBadge.charAt(0).toUpperCase()}
-                        </span>
-                      )}
                     </div>
 
                     {/* Middle: Title & Last Message Preview */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
-                        <p
-                          className={`text-xs font-bold truncate ${
-                            isActive ? "text-foreground" : "text-foreground/90"
-                          }`}
-                        >
-                          {t.name}
-                        </p>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <p
+                            className={`text-xs sm:text-[13px] font-bold truncate ${
+                              isActive ? "text-foreground" : "text-foreground/90"
+                            }`}
+                          >
+                            {t.name}
+                          </p>
+                          {t.isClient && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shrink-0">
+                              Client
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0 font-medium">
                           {t.lastMessageTime}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                        {t.lastMessage}
-                      </p>
-                    </div>
-
-                    {/* Right-side Indicators: Unread Dot, Attachment, Star */}
-                    <div className="flex items-center gap-1.5 shrink-0 pl-1">
-                      {t.unreadCount > 0 && (
-                        <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                      )}
-
-                      {t.hasAttachment && (
-                        <Paperclip className="w-3 h-3 text-muted-foreground shrink-0" />
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleStar(t.id, e)}
-                        className="text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
-                        title={t.isStarred ? "Unstar" : "Star"}
-                      >
-                        <Star
-                          className={`w-3.5 h-3.5 ${
-                            t.isStarred ? "fill-amber-500 text-amber-500" : ""
-                          }`}
-                        />
-                      </button>
+                      <div className="flex items-center justify-between gap-2 mt-0.5">
+                        <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+                          {t.lastMessage}
+                        </p>
+                        {/* Unread badge if any, visually balanced without pin/star clutter */}
+                        {t.unreadCount > 0 && (
+                          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-xs">
+                            {t.unreadCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -612,10 +630,17 @@ export function MessagesPage() {
 
                 {/* Title & Subtitle */}
                 <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-foreground truncate">
-                    {activeThread.name}
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground truncate">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
+                      {activeThread.name}
+                    </h3>
+                    {activeThread.isClient && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+                        Client
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
                     {isCurrentGroup ? (
                       <>
                         <span>{activeThread.membersCount || 12} Members</span>{" "}
@@ -657,17 +682,7 @@ export function MessagesPage() {
                   </div>
                 )}
 
-                {/* Voice Call Button */}
-                <button
-                  type="button"
-                  onClick={() => setIsVoiceCallOpen(true)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-[#E7E7EC] dark:border-[#323238] bg-[#F4F4F7] dark:bg-[#1a1a1c] hover:bg-white dark:hover:bg-[#2e2e34] grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-xs"
-                  title="Start voice call"
-                >
-                  <Phone className="w-4 h-4" />
-                </button>
-
-                {/* Video Call Button */}
+                {/* Video Call Button - Only video call */}
                 <button
                   type="button"
                   onClick={() => setIsVideoCallOpen(true)}
@@ -752,15 +767,13 @@ export function MessagesPage() {
                     >
                       {/* Sender Name above message */}
                       {!isMe && (
-                        <p className="text-[11px] font-semibold text-foreground px-1">
-                          {m.senderName}
-                        </p>
+                        <p className="text-xs font-semibold text-foreground px-1">{m.senderName}</p>
                       )}
 
                       {/* Regular Text Bubble */}
                       {m.text && (
                         <div
-                          className={`p-3 sm:px-4 sm:py-2.5 rounded-2xl text-xs leading-relaxed ${
+                          className={`p-3 sm:px-4 sm:py-2.5 rounded-2xl text-[13.5px] sm:text-sm leading-relaxed ${
                             isMe
                               ? "bg-blue-600 text-white rounded-tr-xs shadow-xs"
                               : "bg-white dark:bg-[#242428] text-foreground border border-[#E7E7EC] dark:border-[#323238] rounded-tl-xs shadow-xs"
@@ -840,14 +853,30 @@ export function MessagesPage() {
                         </div>
                       )}
 
-                      {/* Time & Delivery Checkmarks & Reactions */}
+                      {/* Time & Sent/Received Status in Hierarchy and Alignment */}
                       <div
-                        className={`flex items-center gap-1.5 text-[10px] text-muted-foreground px-1 ${
+                        className={`flex items-center gap-1.5 text-[11px] text-muted-foreground px-1 mt-1 ${
                           isMe ? "justify-end" : "justify-start"
                         }`}
                       >
-                        <span>{m.time}</span>
-                        {isMe && <CheckCheck className="w-3.5 h-3.5 text-blue-500" />}
+                        <span className="font-normal text-muted-foreground/90">{m.time}</span>
+                        <span className="text-[9px] opacity-40">•</span>
+                        <span className="text-[10px] font-medium tracking-tight">
+                          {isMe
+                            ? m.status === "read"
+                              ? "Read"
+                              : m.status === "sending"
+                                ? "Sending..."
+                                : "Sent"
+                            : "Received"}
+                        </span>
+                        {isMe && (
+                          <CheckCheck
+                            className={`w-3.5 h-3.5 ${
+                              m.status === "read" ? "text-blue-500" : "text-blue-500/80"
+                            } shrink-0`}
+                          />
+                        )}
                       </div>
 
                       {/* Reaction Badges below message */}
@@ -895,7 +924,7 @@ export function MessagesPage() {
                     }
                   }}
                   placeholder="Type @ to mention someone..."
-                  className="w-full bg-transparent px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  className="w-full bg-transparent px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
 
                 {/* Input Action Controls Footer Bar */}
@@ -1059,12 +1088,6 @@ export function MessagesPage() {
         onClose={() => setIsAddMemberOpen(false)}
         existingMemberIds={(activeThread.members || []).map((m) => m.id)}
         onAddMembers={handleAddMembers}
-      />
-
-      <VoiceCallModal
-        isOpen={isVoiceCallOpen}
-        thread={activeThread}
-        onClose={() => setIsVoiceCallOpen(false)}
       />
 
       <VideoCallModal

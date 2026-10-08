@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/tanstackstart-react";
+import { recordErrorActivity } from "./error-activity-store";
 
 type LovableErrorOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
@@ -66,4 +67,18 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
     stack: error instanceof Error ? error.stack : undefined,
     filename: window.location.pathname,
   });
+
+  try {
+    recordErrorActivity({
+      message,
+      source: "React Error Boundary",
+      mechanism: "react_error_boundary",
+      severity: "error",
+      status: "Active",
+      route: window.location.pathname,
+      details: error instanceof Error ? error.stack : undefined,
+    });
+  } catch {
+    // Ignore persistence failures
+  }
 }
