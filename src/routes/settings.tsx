@@ -43,6 +43,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { BetterStackStatus } from "@/components/betterstack-status";
+import { ErrorActivityWidget } from "@/components/dashboard/error-activity-widget";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -1590,6 +1591,7 @@ function SettingsPage() {
                 className="space-y-6"
               >
                 <BetterStackStatus />
+                <ErrorActivityWidget />
               </motion.div>
             )}
           </AnimatePresence>

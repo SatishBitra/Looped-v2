@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Play, Pause, Square, Maximize2, Clock } from "lucide-react";
+import { Play, Pause, Square, Maximize2, Clock, X } from "lucide-react";
 import { ActiveTimerSession, formatTimeParts } from "./types";
 
 interface FloatingTimerBarProps {
@@ -7,6 +7,7 @@ interface FloatingTimerBarProps {
   onOpenModal: () => void;
   onTogglePlayPause: () => void;
   onStopAndLog: () => void;
+  onClose?: () => void;
 }
 
 export function FloatingTimerBar({
@@ -14,6 +15,7 @@ export function FloatingTimerBar({
   onOpenModal,
   onTogglePlayPause,
   onStopAndLog,
+  onClose,
 }: FloatingTimerBarProps) {
   const remaining = formatTimeParts(session.secondsRemaining);
   const isTimeUp = session.secondsRemaining <= 0;
@@ -121,6 +123,21 @@ export function FloatingTimerBar({
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
+
+        {/* Close / Dismiss Floating Bar Button */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            title="Dismiss floating timer badge"
+            className="w-8 h-8 rounded-lg hover:bg-accent grid place-items-center text-[#757575] hover:text-foreground transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </motion.div>
   );

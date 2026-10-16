@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card, SectionTitle, StatusPill } from "@/components/app-shell";
-import { ErrorActivityWidget } from "@/components/dashboard/error-activity-widget";
 import {
   ArrowUpRight,
   MoreHorizontal,
@@ -363,11 +362,6 @@ function Dashboard() {
             ))}
           </div>
         </Card>
-      </div>
-
-      {/* Persistent Error Activity Telemetry Widget */}
-      <div className="mt-8">
-        <ErrorActivityWidget />
       </div>
     </AppShell>
   );

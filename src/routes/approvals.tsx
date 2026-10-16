@@ -12,6 +12,7 @@ import {
   Layers,
   CheckCircle2,
   ExternalLink,
+  Eye,
   ChevronRight,
   ChevronDown,
   Filter,
@@ -847,9 +848,9 @@ function ApprovalsPage() {
                             type="button"
                             onClick={() => setSelectedPreview(q)}
                             className="p-1.5 rounded-lg border border-[#E7E7EC] dark:border-[#323238] bg-white dark:bg-[#242428] text-muted-foreground hover:text-foreground hover:border-[#A8A8A8] transition-colors cursor-pointer"
-                            title="Inspect Deliverable & Notes"
+                            title="Inspect & Preview Deliverable"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>

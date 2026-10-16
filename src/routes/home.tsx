@@ -28,6 +28,7 @@ import {
   X,
   Timer,
   Bell,
+  Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CapacityTimerModal } from "@/components/capacity/capacity-timer-modal";
@@ -285,6 +286,7 @@ function EmployeeDashboardPage() {
   // Switch task confirmation modal state
   const [pendingSwitchTask, setPendingSwitchTask] = useState<Task | null>(null);
   const [isSwitchConfirmOpen, setIsSwitchConfirmOpen] = useState(false);
+  const [isFloatingTimerDismissed, setIsFloatingTimerDismissed] = useState(false);
 
   // Employee profile name
   const [employeeProfileName, setEmployeeProfileName] = useState("Sandy K.");
@@ -559,6 +561,7 @@ function EmployeeDashboardPage() {
 
   // Quick Action: Start or open capacity countdown timer
   const handleStartOrOpenTimer = (task: Task) => {
+    setIsFloatingTimerDismissed(false);
     // Check if an active timer is already running/paused for another task
     if (activeTimer && activeTimer.taskId !== task.id) {
       setPendingSwitchTask(task);
@@ -1685,15 +1688,71 @@ function EmployeeDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* 5. Persistent Floating Mini-Timer Bar (Shown when active timer is running in background) */}
+      {/* 5. Persistent Floating Mini-Timer Bar & Toggle Badge */}
       <AnimatePresence>
-        {isMounted && activeTimer && !isLogTimeOpen && (
+        {isMounted && activeTimer && !isLogTimeOpen && !isFloatingTimerDismissed && (
           <FloatingTimerBar
             session={activeTimer}
-            onOpenModal={() => setIsLogTimeOpen(true)}
+            onOpenModal={() => {
+              setIsFloatingTimerDismissed(false);
+              setIsLogTimeOpen(true);
+            }}
             onTogglePlayPause={handleTogglePlayPause}
             onStopAndLog={() => handleStopAndLogTimer()}
+            onClose={() => {
+              setIsFloatingTimerDismissed(true);
+              toast.info("Floating timer badge closed. Click task hour or toggle below to reopen.");
+            }}
           />
+        )}
+
+        {isMounted && activeTimer && !isLogTimeOpen && isFloatingTimerDismissed && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 12 }}
+            className="fixed bottom-6 right-6 z-40 bg-white/95 dark:bg-[#1E1E22]/95 backdrop-blur-md border border-[#E7E7EC] dark:border-[#323238] rounded-full pl-3 pr-1.5 py-1.5 shadow-lg flex items-center gap-2 text-xs text-foreground select-none"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setIsFloatingTimerDismissed(false);
+                setIsLogTimeOpen(true);
+              }}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
+              title="Open full Capacity Timer"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#33A579] animate-pulse" />
+              <span className="font-semibold truncate max-w-[140px]">{activeTimer.taskTitle}</span>
+              <span className="font-mono text-[#33A579] font-bold">
+                {formatTimeParts(activeTimer.secondsRemaining).fullFormatted}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFloatingTimerDismissed(false);
+              }}
+              title="Restore floating timer badge"
+              className="w-6.5 h-6.5 rounded-full hover:bg-surface grid place-items-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveTimer(null);
+                localStorage.removeItem("looped_active_timer_session");
+                toast.info("Timer session closed");
+              }}
+              title="Close and cancel active timer"
+              className="w-6.5 h-6.5 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/40 grid place-items-center text-muted-foreground hover:text-rose-600 cursor-pointer transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </AppShell>

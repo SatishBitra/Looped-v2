@@ -24,19 +24,26 @@ import { toast } from "sonner";
 import * as Sentry from "@sentry/tanstackstart-react";
 
 export function ErrorActivityWidget() {
+  const [mounted, setMounted] = useState(false);
   const { errors, updateStatus, clearResolved, resetDefaults } = useErrorActivity();
   const [filter, setFilter] = useState<"all" | "Active" | "Investigating" | "Resolved">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = errors.filter((e) => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const displayErrors = mounted ? errors : [];
+
+  const filtered = displayErrors.filter((e) => {
     if (filter === "all") return true;
     return e.status === filter;
   });
 
-  const activeCount = errors.filter(
+  const activeCount = displayErrors.filter(
     (e) => e.status === "Active" || e.status === "Investigating",
   ).length;
-  const resolvedCount = errors.filter((e) => e.status === "Resolved").length;
+  const resolvedCount = displayErrors.filter((e) => e.status === "Resolved").length;
 
   const handleSimulateTestError = () => {
     try {

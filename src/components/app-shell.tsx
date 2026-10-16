@@ -63,6 +63,7 @@ const nav = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/projects", icon: FolderKanban, label: "Projects" },
   { to: "/tasks", icon: CheckSquare, label: "Tasks" },
+  { to: "/timer", icon: Clock, label: "Timer" },
   { to: "/calendar", icon: Calendar, label: "Calendar" },
   { to: "/approvals", icon: ShieldCheck, label: "Approvals" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
